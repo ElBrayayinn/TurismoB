@@ -35,6 +35,10 @@ const serveFrontend = fs.existsSync(path.join(FRONTEND_DIST, 'index.html'));
 
 const app = express();
 
+// Railway (y cualquier reverse proxy) envía X-Forwarded-For. Sin trust proxy,
+// express-rate-limit aborta el proceso al primer request (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR).
+app.set('trust proxy', 1);
+
 // Seguridad de cabeceras. Se permite el uso cruzado de recursos para que el
 // frontend (otro origen en desarrollo) pueda cargar las imágenes de /uploads.
 // frame-src: el mapa de ficha se embebe por iframe (OSM / Google), no con la
