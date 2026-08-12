@@ -29,3 +29,30 @@ export function buildGoogleMapsDirectionsUrl(site, mode = 'walk', origin = null)
 
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
+
+/**
+ * URL de mapa embebido (iframe) sin Maps JavaScript API ni clave de facturación.
+ * Prefiere coordenadas; si no hay, usa la dirección.
+ * @param {{ lat?: number|string, lng?: number|string, address?: string, name?: string }} site
+ * @returns {string|null}
+ */
+export function buildGoogleMapsEmbedUrl(site) {
+  if (!site) return null;
+
+  const lat = site.lat != null && site.lat !== '' ? Number(site.lat) : NaN;
+  const lng = site.lng != null && site.lng !== '' ? Number(site.lng) : NaN;
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+  const address = typeof site.address === 'string' ? site.address.trim() : '';
+
+  if (!hasCoords && !address) return null;
+
+  const query = hasCoords ? `${lat},${lng}` : address;
+  const params = new URLSearchParams({
+    q: query,
+    z: '16',
+    hl: 'es',
+    output: 'embed',
+  });
+
+  return `https://maps.google.com/maps?${params.toString()}`;
+}

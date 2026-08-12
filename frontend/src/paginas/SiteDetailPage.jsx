@@ -9,7 +9,6 @@ import {
   RiRoadMapLine
 } from 'react-icons/ri';
 import { AppContext } from '../contexto/AppContext';
-import { useGeolocation } from '../hooks/useGeolocation';
 import { InteractiveMap } from '../componentes/detalle/InteractiveMap';
 import { resolveImage } from '../utilidades/image';
 import './SiteDetailPage.css';
@@ -17,10 +16,11 @@ import './SiteDetailPage.css';
 export const SiteDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { sites, incrementVisit, setActiveRouteSite, setIsRouteOpen, siteVisits } = useContext(AppContext);
-  const { position: userPosition, loading: geoLoading } = useGeolocation();
+  const {
+    sites, loading, incrementVisit, setActiveRouteSite, setIsRouteOpen, siteVisits,
+  } = useContext(AppContext);
 
-  const site = sites.find(s => s.id === parseInt(id));
+  const site = sites.find(s => s.id === parseInt(id, 10));
 
   // Incrementar visita una sola vez por sitio, evitando el doble conteo
   // que provoca el doble montaje de React StrictMode.
@@ -33,19 +33,26 @@ export const SiteDetailPage = () => {
   }, [site, incrementVisit]);
 
   if (!site) {
+    // Mientras los sitios se están cargando no se puede afirmar que no exista.
     return (
-      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
-        <h2>Sitio no encontrado</h2>
-        <button className="detail-back-btn" style={{ marginTop: '20px' }} onClick={() => navigate('/')}>
-          <RiArrowLeftLine /> Volver al Inicio
+      <div className="detail-missing container">
+        <h2>{loading ? 'Cargando el sitio…' : 'Sitio no encontrado'}</h2>
+        {!loading && (
+          <p className="detail-missing__text">
+            El destino que buscas no está disponible o fue retirado del portal.
+          </p>
+        )}
+        <button className="btn-primary" onClick={() => navigate('/')}>
+          <RiArrowLeftLine aria-hidden="true" /> Volver al Inicio
         </button>
       </div>
     );
   }
 
   // Coordenadas para mostrar
-  const latStr = site.lat ? `${parseFloat(site.lat).toFixed(4)}° N` : '6.1718° N';
-  const lngStr = site.lng ? `${Math.abs(parseFloat(site.lng)).toFixed(4)}° W` : '75.6094° W';
+  const latStr = site.lat != null ? `${Number(site.lat).toFixed(4)}° N` : 'sin registrar';
+  const lngStr = site.lng != null ? `${Math.abs(Number(site.lng)).toFixed(4)}° W` : '';
+  const rating = Number(site.rating);
 
   // Gestión de imágenes secundarias
   const mainImage = site.images && site.images[0] ? resolveImage(site.images[0]) : 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?auto=format&fit=crop&w=800&q=80';
@@ -73,15 +80,34 @@ export const SiteDetailPage = () => {
       <section className="detail-gallery-section">
         <div className={`detail-gallery-grid ${hasMultipleImages ? 'detail-gallery-grid--split' : 'detail-gallery-grid--single'}`}>
           <div className="detail-gallery__main">
-            <img src={mainImage} alt={site.name} className="detail-gallery__img" />
+            <img
+              src={mainImage}
+              alt={site.name}
+              className="detail-gallery__img"
+              /* Imagen principal de la vista: se carga con prioridad. */
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
           {hasMultipleImages && (
             <div className="detail-gallery__secondary">
               <div className="detail-gallery__sub-wrap">
-                <img src={secImage1} alt="Vista secundaria 1" className="detail-gallery__img" />
+                <img
+                  src={secImage1}
+                  alt={`${site.name} — vista secundaria 1`}
+                  className="detail-gallery__img"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <div className="detail-gallery__sub-wrap">
-                <img src={secImage2} alt="Vista secundaria 2" className="detail-gallery__img" />
+                <img
+                  src={secImage2}
+                  alt={`${site.name} — vista secundaria 2`}
+                  className="detail-gallery__img"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             </div>
           )}
@@ -91,12 +117,18 @@ export const SiteDetailPage = () => {
         <div className="detail-gallery__overlay">
           <div className="container detail-gallery__overlay-container">
             <div className="detail-gallery__info-card">
-              <span className="detail-gallery__coords">COORDS: {latStr}, {lngStr}</span>
+              <span className="detail-gallery__coords">
+                COORDS: {[latStr, lngStr].filter(Boolean).join(', ')}
+              </span>
               <h1 className="detail-gallery__title">{site.name}</h1>
               <div className="detail-gallery__meta-row">
                 <span className="detail-gallery__meta-tag">{site.category}</span>
-                <span className="detail-gallery__dot-sep"></span>
-                <span className="detail-gallery__meta-tag">{site.hours}</span>
+                {site.hours && (
+                  <>
+                    <span className="detail-gallery__dot-sep"></span>
+                    <span className="detail-gallery__meta-tag">{site.hours}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -110,7 +142,7 @@ export const SiteDetailPage = () => {
           <div className="detail-main-content">
             <h2 className="detail-section-subtitle">El corazón cultural de la ciudad</h2>
             <div className="detail-description-text">
-              {site.description.split('\n\n').map((paragraph, index) => (
+              {(site.description || '').split('\n\n').map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
               ))}
             </div>
@@ -124,7 +156,8 @@ export const SiteDetailPage = () => {
               <div className="detail-stat-card">
                 <p className="detail-stat-title">CALIFICACIÓN</p>
                 <p className="detail-stat-value">
-                  {site.rating.toFixed(1)} <span className="detail-stat-sub">/ 5.0</span>
+                  {Number.isFinite(rating) ? rating.toFixed(1) : '—'}{' '}
+                  <span className="detail-stat-sub">/ 5.0</span>
                 </p>
               </div>
               <div className="detail-stat-card">
@@ -208,17 +241,11 @@ export const SiteDetailPage = () => {
       <section className="container detail-map-section">
         <h3 className="detail-map-heading">Ubicación Geográfica</h3>
         <div className="detail-map-wrapper">
-          <InteractiveMap 
-            site={site} 
-            userPosition={userPosition} 
+          <InteractiveMap
+            site={site}
             onStartRoute={handleStartRoute}
           />
         </div>
-        {geoLoading && (
-          <p className="detail-map-loading">
-            Buscando señal de GPS para sincronizar tu ruta...
-          </p>
-        )}
       </section>
     </div>
   );
