@@ -1,0 +1,90 @@
+/* src/pages/NotFound.css — también estiliza el ErrorBoundary */
+
+.notfound,
+.app-crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-sm);
+  min-height: 60vh;
+  padding: var(--space-xl) var(--container-pad);
+}
+
+.notfound__icon {
+  font-size: clamp(48px, 12vw, 72px);
+  color: var(--color-accent);
+  margin-bottom: var(--space-2xs);
+}
+
+.notfound__code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+.notfound__title,
+.app-crash__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.15;
+}
+
+html.dark .notfound__title,
+html.dark .app-crash__title {
+  color: var(--color-text-primary);
+}
+
+.notfound__text,
+.app-crash__text {
+  font-size: var(--fs-body);
+  color: var(--color-text-secondary);
+  max-width: 46ch;
+  line-height: 1.6;
+}
+
+.notfound__actions,
+.app-crash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  width: 100%;
+}
+
+/* En móvil los botones ocupan todo el ancho: son el único camino de salida. */
+@media (max-width: 480px) {
+  .notfound__actions > *,
+  .app-crash__actions > * {
+    width: 100%;
+  }
+}
+
+.app-crash__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 560px;
+  width: 100%;
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.app-crash__detail {
+  font-size: var(--fs-xs);
+  color: var(--color-danger);
+  background: rgba(186, 26, 26, 0.08);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
