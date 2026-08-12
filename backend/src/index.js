@@ -5,6 +5,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import multer from 'multer';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { config } from './config.js';
 import { initDb } from './db.js';
@@ -22,17 +25,66 @@ import { statsRouter } from './routes/stats.js';
 import { geocodeRouter } from './routes/geocode.js';
 import { googleCalendarRouter } from './routes/googleCalendar.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Build del frontend. En el despliegue monolítico (Railway) la API y la SPA
+// comparten un mismo origen: este servidor sirve frontend/dist si existe.
+// En desarrollo la carpeta no existe y Vite se encarga del frontend.
+const FRONTEND_DIST = path.resolve(__dirname, '..', '..', 'frontend', 'dist');
+const serveFrontend = fs.existsSync(path.join(FRONTEND_DIST, 'index.html'));
+
 const app = express();
 
 // Seguridad de cabeceras. Se permite el uso cruzado de recursos para que el
 // frontend (otro origen en desarrollo) pueda cargar las imágenes de /uploads.
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+// frame-src: el mapa de ficha se embebe por iframe (OSM / Google), no con la
+// Maps JavaScript API — sin esto Helmet (default-src 'self') lo deja en negro.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      frameSrc: [
+        "'self'",
+        'https://www.openstreetmap.org',
+        'https://maps.google.com',
+        'https://www.google.com',
+      ],
+      imgSrc: [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://images.unsplash.com',
+        'https://*.basemaps.cartocdn.com',
+        'https://*.tile.openstreetmap.org',
+      ],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+      connectSrc: [
+        "'self'",
+        'https://nominatim.openstreetmap.org',
+      ],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
 
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: '2mb' }));
 
 // Archivos estáticos subidos (imágenes de sitios, anuncios y PQRS).
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));
+
+// Activos estáticos de la SPA (JS/CSS con hash en el nombre → caché larga).
+if (serveFrontend) {
+  app.use(express.static(FRONTEND_DIST, { maxAge: '1y', index: false }));
+}
 
 // Sonda de salud.
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
@@ -52,6 +104,16 @@ app.use('/api/google-calendar', googleCalendarRouter);
 
 // 404 para rutas de API desconocidas.
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Recurso no encontrado.' }));
+
+// Enrutado del lado del cliente: cualquier otra ruta devuelve index.html para
+// que React Router resuelva la vista. Sin caché, para que un nuevo despliegue
+// se vea de inmediato.
+if (serveFrontend) {
+  app.get('*', (_req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
 
 // Manejo centralizado de errores (incluye errores de multer y de validación).
 // eslint-disable-next-line no-unused-vars

@@ -32,7 +32,8 @@ export function buildGoogleMapsDirectionsUrl(site, mode = 'walk', origin = null)
 
 /**
  * URL de mapa embebido (iframe) sin Maps JavaScript API ni clave de facturación.
- * Prefiere coordenadas; si no hay, usa la dirección.
+ * Con coordenadas usa OpenStreetMap (no requiere facturación de Google).
+ * Si solo hay dirección, cae al embed clásico de Google Maps.
  * @param {{ lat?: number|string, lng?: number|string, address?: string, name?: string }} site
  * @returns {string|null}
  */
@@ -44,11 +45,22 @@ export function buildGoogleMapsEmbedUrl(site) {
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
   const address = typeof site.address === 'string' ? site.address.trim() : '';
 
-  if (!hasCoords && !address) return null;
+  if (hasCoords) {
+    // ~0.008° ≈ 900 m; bbox suficiente para ver el barrio alrededor del sitio.
+    const d = 0.008;
+    const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;
+    const params = new URLSearchParams({
+      bbox,
+      layer: 'mapnik',
+      marker: `${lat},${lng}`,
+    });
+    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+  }
 
-  const query = hasCoords ? `${lat},${lng}` : address;
+  if (!address) return null;
+
   const params = new URLSearchParams({
-    q: query,
+    q: address,
     z: '16',
     hl: 'es',
     output: 'embed',
