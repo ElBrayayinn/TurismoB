@@ -1,7 +1,9 @@
 // src/componentes/detalle/InteractiveMap.jsx
 import { useEffect, useState } from 'react';
-import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary, ColorScheme } from '@vis.gl/react-google-maps';
+import { Map, AdvancedMarker, InfoWindow, ColorScheme } from '@vis.gl/react-google-maps';
 import { RiNavigationLine } from 'react-icons/ri';
+import { useIsDarkTheme } from '../../hooks/useDarkMode';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import './InteractiveMap.css';
 
 const ITAGUI_CENTER = { lat: 6.1724, lng: -75.6091 };
@@ -9,69 +11,15 @@ const ITAGUI_CENTER = { lat: 6.1724, lng: -75.6091 };
 // Para producción, crea un Map ID propio en "Google Maps Platform > Map Management".
 const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 
-// Traza la ruta real (calles y avenidas) entre el usuario y el sitio usando la Directions API.
-function DirectionsRoute({ origin, destination, mode }) {
-  const map = useMap();
-  const routesLibrary = useMapsLibrary('routes');
-  const [directionsService, setDirectionsService] = useState(null);
-  const [directionsRenderer, setDirectionsRenderer] = useState(null);
-
-  useEffect(() => {
-    if (!routesLibrary || !map) return;
-    // Se difiere para no hacer setState síncrono dentro del efecto.
-    Promise.resolve().then(() => {
-      setDirectionsService(new routesLibrary.DirectionsService());
-      setDirectionsRenderer(
-        new routesLibrary.DirectionsRenderer({
-          map,
-          suppressMarkers: true,
-          polylineOptions: { strokeColor: '#E8B400', strokeWeight: 6, strokeOpacity: 0.85 }
-        })
-      );
-    });
-  }, [routesLibrary, map]);
-
-  // Limpiar la línea del mapa al desmontar el componente.
-  useEffect(() => {
-    return () => directionsRenderer?.setMap(null);
-  }, [directionsRenderer]);
-
-  useEffect(() => {
-    if (!directionsService || !directionsRenderer || !origin || !destination) return;
-
-    directionsService
-      .route({
-        origin,
-        destination,
-        travelMode: mode === 'walk' ? 'WALKING' : 'DRIVING'
-      })
-      .then((result) => {
-        directionsRenderer.setDirections(result);
-        const bounds = result.routes[0]?.bounds;
-        if (bounds) map.fitBounds(bounds, 50);
-      })
-      .catch((err) => console.error('Error calculando ruta con Google Directions:', err));
-  }, [directionsService, directionsRenderer, origin, destination, mode, map]);
-
-  return null;
-}
-
-export const InteractiveMap = ({ site, userPosition, onStartRoute, showRoute = false, routeMode = 'walk' }) => {
+export const InteractiveMap = ({ site, userPosition, onStartRoute }) => {
   const [coordinates, setCoordinates] = useState(() => {
     if (site.lat && site.lng) return { lat: parseFloat(site.lat), lng: parseFloat(site.lng) };
     return null;
   });
   const [loading, setLoading] = useState(() => !(site.lat && site.lng));
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [siteInfoOpen, setSiteInfoOpen] = useState(false);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+  const isDark = useIsDarkTheme();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (site.lat && site.lng) {
@@ -114,8 +62,8 @@ export const InteractiveMap = ({ site, userPosition, onStartRoute, showRoute = f
 
   if (loading || !coordinates) {
     return (
-      <div className="map-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-surface-alt)', minHeight: '300px' }}>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>Cargando ubicación en el mapa...</p>
+      <div className="map-container map-container--loading">
+        <p className="map-container__loading-text">Cargando ubicación en el mapa…</p>
       </div>
     );
   }
@@ -133,6 +81,11 @@ export const InteractiveMap = ({ site, userPosition, onStartRoute, showRoute = f
         disableDefaultUI={false}
         streetViewControl={false}
         mapTypeControl={false}
+        /* En móvil se ocultan los controles que estorban en pantallas pequeñas
+           y se acerca el zoom por defecto, que se ve mejor en poco espacio. */
+        fullscreenControl={!isMobile}
+        zoomControl={!isMobile}
+        clickableIcons={!isMobile}
       >
         {/* Marcador del sitio turístico */}
         <AdvancedMarker position={coordinates} onClick={() => setSiteInfoOpen(true)}>
@@ -159,21 +112,11 @@ export const InteractiveMap = ({ site, userPosition, onStartRoute, showRoute = f
             </div>
           </AdvancedMarker>
         )}
-
-        {/* Ruta trazada en tiempo real */}
-        {showRoute && userPosition && (
-          <DirectionsRoute
-            origin={{ lat: userPosition.lat, lng: userPosition.lng }}
-            destination={coordinates}
-            mode={routeMode}
-          />
-        )}
       </Map>
 
-      {/* Botón flotante para fijar ruta si se tiene la ubicación del usuario */}
-      {userPosition && onStartRoute && (
+      {onStartRoute && (
         <div className="map-actions">
-          <button className="map-actions__btn" onClick={onStartRoute}>
+          <button className="map-actions__btn" type="button" onClick={onStartRoute}>
             <RiNavigationLine />
             <span>Fijar Ruta de Destino</span>
           </button>

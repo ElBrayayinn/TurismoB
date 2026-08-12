@@ -4,6 +4,7 @@
 // asíncronas que llaman a la API y sincronizan el estado local.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppContext } from './AppContext';
+import { useGeolocation } from '../hooks/useGeolocation';
 import {
   authApi, usersApi, sitesApi, announcementsApi, eventsApi, pqrsApi, settingsApi,
   getToken, setToken, clearToken,
@@ -24,11 +25,22 @@ export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const adminAuth = !!currentUser;
 
-  // Estados globales de la ruta (Isla Dinámica) — puramente de UI.
+  // Estados globales del modal de ruta (redirección a Google Maps).
   const [activeRouteSite, setActiveRouteSite] = useState(null);
-  const [activeRouteMode, setActiveRouteMode] = useState('walk');
   const [isRouteOpen, setIsRouteOpen] = useState(false);
-  const [isRouteMapOpen, setIsRouteMapOpen] = useState(false);
+
+  // ─── Geolocalización compartida ───────────────────────────
+  // Un único watchPosition para toda la app, y apagado hasta que una vista lo
+  // pide (así la portada no dispara el diálogo de permisos ni gasta batería).
+  const [geoEnabled, setGeoEnabled] = useState(false);
+  const {
+    position: userPosition,
+    error: userPositionError,
+    loading: userPositionLoading,
+    isSimulated: userLocationSimulated,
+  } = useGeolocation(geoEnabled);
+
+  const requestUserLocation = useCallback(() => setGeoEnabled(true), []);
 
   // Mapa id → visitas, derivado de los sitios (para los componentes que lo usan).
   const siteVisits = useMemo(
@@ -248,12 +260,15 @@ export const AppProvider = ({ children }) => {
       // Rutas (UI)
       activeRouteSite,
       setActiveRouteSite,
-      activeRouteMode,
-      setActiveRouteMode,
       isRouteOpen,
       setIsRouteOpen,
-      isRouteMapOpen,
-      setIsRouteMapOpen,
+
+      // Geolocalización compartida
+      userPosition,
+      userPositionError,
+      userPositionLoading,
+      userLocationSimulated,
+      requestUserLocation,
 
       // Acciones de datos
       addSite,
