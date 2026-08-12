@@ -4,6 +4,10 @@
    ============================================================ */
 
 :root {
+  /* --- ESQUEMA NATIVO --- */
+  /* Hace que scrollbars, autocompletado y controles nativos sigan el tema. */
+  color-scheme: light;
+
   /* --- MARCA ITAGÜÍ --- */
   --color-primary:        #001d59;   /* Azul institucional profundo */
   --color-primary-light:  #003087;   /* Azul alcaldía — primary-container */
@@ -30,6 +34,7 @@
   /* --- BORDES (modo claro) --- */
   --color-border:         #c4c6d4;   /* outline-variant */
   --color-border-strong:  #747683;   /* outline */
+  --color-border-faint:   rgba(23, 27, 43, 0.08); /* separadores internos */
 
   /* --- ESTADOS --- */
   --color-success:        #1B6E3A;
@@ -60,12 +65,70 @@
   /* --- SOMBRAS --- */
   --shadow-card:  none;  /* Sin sombras para estilo editorial plano de Stitch */
   --shadow-modal: 0 12px 36px rgba(23, 27, 43, 0.2);
+
+  /* ============================================================
+     SISTEMA RESPONSIVE — MOBILE FIRST
+     Puntos de quiebre de referencia (usados en todo el proyecto):
+       ≤ 360px  → móviles muy pequeños (Galaxy A0x, iPhone SE 1ª gen)
+       ≤ 480px  → móviles
+       ≤ 768px  → móviles grandes / tablets en vertical
+       ≤ 1024px → tablets en horizontal
+       ≥ 1025px → escritorio
+     ============================================================ */
+
+  /* Áreas seguras (notch de iPhone, barra de gestos de Android). */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+
+  /* Altura real de la cabecera fija. Se reduce en móvil (ver más abajo) y
+     cualquier elemento sticky debe posicionarse con esta variable. */
+  --header-h: 70px;
+
+  /* Objetivo mínimo táctil recomendado (WCAG 2.5.5 / Material). */
+  --tap-min: 44px;
+
+  /* Relleno horizontal fluido del contenedor: 16px en móvil → 32px en desktop. */
+  --container-pad: clamp(1rem, 0.35rem + 2.2vw, 2rem);
+
+  /* Espaciado vertical fluido entre secciones. */
+  --space-2xs: clamp(0.25rem, 0.2rem + 0.2vw, 0.5rem);
+  --space-xs:  clamp(0.5rem,  0.4rem + 0.4vw, 0.75rem);
+  --space-sm:  clamp(0.75rem, 0.6rem + 0.6vw, 1rem);
+  --space-md:  clamp(1rem,    0.8rem + 1vw,   1.5rem);
+  --space-lg:  clamp(1.5rem,  1.1rem + 2vw,   2.5rem);
+  --space-xl:  clamp(2rem,    1.4rem + 3vw,   3.5rem);
+
+  /* Escala tipográfica fluida: nunca hay que "apagar" tamaños por media query. */
+  --fs-display: clamp(1.75rem, 1.15rem + 3vw,   2.5rem);   /* 28 → 40px */
+  --fs-h1:      clamp(1.5rem,  1.1rem + 2vw,    2.25rem);  /* 24 → 36px */
+  --fs-h2:      clamp(1.25rem, 1.05rem + 1vw,   1.5rem);   /* 20 → 24px */
+  --fs-h3:      clamp(1.0625rem, 0.98rem + 0.5vw, 1.1875rem);
+  --fs-body:    clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);    /* 15 → 16px */
+  --fs-sm:      0.8125rem;   /* 13px */
+  --fs-xs:      0.75rem;     /* 12px */
+
+  /* Alturas fluidas de piezas visuales grandes. */
+  --hero-h:   clamp(240px, 42vh, 480px);
+  --detail-hero-h: clamp(260px, 48vh, 600px);
+  --map-h:    clamp(260px, 45vh, 480px);
+}
+
+/* La cabecera es más baja en móvil: se sincroniza aquí una sola vez. */
+@media (max-width: 768px) {
+  :root {
+    --header-h: 60px;
+    --map-h: clamp(280px, 52vh, 420px);
+  }
 }
 
 /* ============================================================
    MODO OSCURO — clase html.dark
    ============================================================ */
 html.dark {
+  color-scheme: dark;
+
   --color-bg:             #0C0E1A;
   --color-surface:        #161929;
   --color-surface-alt:    #1D2035;
@@ -80,6 +143,7 @@ html.dark {
 
   --color-border:         rgba(232, 180, 0, 0.12);
   --color-border-strong:  rgba(232, 180, 0, 0.22);
+  --color-border-faint:   rgba(255, 255, 255, 0.08);
 
   --color-primary-faint:  rgba(0, 80, 179, 0.18);
   --modal-progress-bg:    rgba(255, 255, 255, 0.15);

@@ -5,9 +5,8 @@
 
 .map-container {
   width: 100%;
-  /* Altura fluida: 45% del viewport, con un mínimo usable en móvil y un
-     máximo para que no domine la página en escritorio. */
   height: var(--map-h);
+  min-height: 280px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border-strong);
   overflow: hidden;
@@ -16,11 +15,16 @@
   background: var(--color-surface-alt);
 }
 
+/* El iframe nativo suele caer a ~150px; hay que anclarlo al contenedor
+   (height: 100% solo no basta de forma fiable en móviles). */
 .map-container__iframe {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
+  max-width: none;
 }
 
 .map-container--loading {

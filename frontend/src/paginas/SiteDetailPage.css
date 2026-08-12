@@ -3,7 +3,7 @@
    ============================================================ */
 
 .detail-page-container {
-  padding: 24px 0 80px;
+  padding: var(--space-md) 0 var(--space-xl);
 }
 
 .detail-back-btn {
@@ -19,9 +19,27 @@
   letter-spacing: 0.08em;
   color: var(--color-primary);
   cursor: pointer;
-  padding: 12px 0;
-  margin-bottom: 24px;
+  padding: 12px 4px;
+  /* Objetivo táctil: es el botón de volver, muy usado en móvil. */
+  min-height: var(--tap-min);
+  margin-bottom: var(--space-sm);
   transition: color 0.2s;
+}
+
+/* Estado "sitio no encontrado" / cargando */
+.detail-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+  padding: var(--space-xl) var(--container-pad);
+}
+
+.detail-missing__text {
+  color: var(--color-text-secondary);
+  font-size: var(--fs-body);
+  max-width: 42ch;
 }
 
 .detail-back-btn:hover {
@@ -40,9 +58,10 @@ html.dark .detail-back-btn:hover {
 .detail-gallery-section {
   position: relative;
   width: 100%;
-  height: 600px;
+  /* Alto fluido (260px móvil → 600px escritorio) en lugar de un valor fijo. */
+  height: var(--detail-hero-h);
   overflow: hidden;
-  margin-bottom: 48px;
+  margin-bottom: var(--space-lg);
   background-color: var(--color-surface-alt);
 }
 
@@ -143,7 +162,7 @@ html.dark .detail-gallery__coords {
 
 .detail-gallery__title {
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: var(--fs-h1);
   font-weight: 700;
   color: var(--color-primary);
   margin: 0 0 16px 0;
@@ -158,7 +177,8 @@ html.dark .detail-gallery__title {
 .detail-gallery__meta-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -180,14 +200,19 @@ html.dark .detail-gallery__title {
 /* Layout Grid */
 .detail-layout-grid {
   display: grid;
-  grid-template-columns: 8fr 4fr;
-  gap: 48px;
-  margin-bottom: 48px;
+  grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  margin-bottom: var(--space-lg);
+}
+
+.detail-main-content,
+.detail-sidebar {
+  min-width: 0;
 }
 
 .detail-section-subtitle {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: var(--fs-h2);
   font-weight: 600;
   color: var(--color-primary);
   margin-top: 0;
@@ -200,9 +225,11 @@ html.dark .detail-section-subtitle {
 
 .detail-description-text {
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--color-text-secondary);
+  /* Longitud de línea cómoda de leer también en tablets anchas. */
+  max-width: 72ch;
 }
 
 .detail-description-text p {
@@ -384,8 +411,9 @@ html.dark .detail-contact-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  /* 44px: enlaces externos fáciles de acertar con el pulgar. */
+  width: var(--tap-min);
+  height: var(--tap-min);
   border: 1px solid var(--color-border);
   border-radius: 50%;
   font-family: var(--font-mono);
@@ -416,7 +444,7 @@ html.dark .detail-social-pill:hover {
 
 .detail-map-heading {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: var(--fs-h2);
   font-weight: 600;
   color: var(--color-primary);
   margin-top: 0;
@@ -429,12 +457,15 @@ html.dark .detail-map-heading {
 
 .detail-map-wrapper {
   width: 100%;
-  height: 400px;
-  border: 1px solid var(--color-border);
+  border: none;
   overflow: hidden;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   position: relative;
   z-index: 1;
+}
+
+.detail-map-wrapper .map-container {
+  width: 100%;
 }
 
 .detail-map-loading {
@@ -447,22 +478,50 @@ html.dark .detail-map-heading {
 @media (max-width: 992px) {
   .detail-layout-grid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: var(--space-lg);
+  }
+
+  /* En una sola columna, primero la acción y los datos de contacto (dirección,
+     horario, teléfono) y después la descripción larga: es lo que el visitante
+     necesita cuando consulta el portal ya estando en la calle. */
+  .detail-sidebar {
+    order: -1;
   }
 }
 
 @media (max-width: 768px) {
+  /* La tarjeta de información pasa a formar parte del flujo, así que la sección
+     deja de tener altura fija. Con `height` fijo + `overflow: hidden`, el
+     título del sitio quedaba recortado y no se veía en móvil. */
   .detail-gallery-section {
-    height: 320px;
-    margin-bottom: 24px;
+    height: auto;
+    overflow: visible;
+    margin-bottom: var(--space-md);
+    background-color: transparent;
   }
-  
+
+  .detail-gallery-grid {
+    height: var(--detail-hero-h);
+    padding: 0;
+    gap: 3px;
+  }
+
+  /* La imagen principal manda y las secundarias quedan como tira inferior:
+     antes se ocultaban por completo y se perdía contenido. */
   .detail-gallery-grid--split {
     grid-template-columns: 1fr;
+    grid-template-rows: 1fr 84px;
   }
 
   .detail-gallery__secondary {
-    display: none; /* Oculta secundarias en móviles pequeños para reducir altura */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    height: 100%;
+  }
+
+  .detail-gallery__img {
+    filter: none; /* sin desaturar: en pantallas pequeñas resta claridad */
   }
 
   /* Desacoplar la tarjeta flotante de información en móviles */
@@ -471,7 +530,8 @@ html.dark .detail-map-heading {
     inset: auto;
     background: transparent;
     padding-bottom: 0;
-    margin-top: 16px;
+    margin-top: var(--space-sm);
+    pointer-events: auto;
   }
 
   .detail-gallery__overlay-container {
@@ -484,9 +544,11 @@ html.dark .detail-map-heading {
     max-width: 100%;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    padding: 20px;
+    padding: var(--space-md);
     border-radius: var(--radius-md);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+    /* backdrop-filter es costoso en Android de gama media y aquí ya no hace
+       falta porque la tarjeta no va sobre la imagen. */
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -496,29 +558,56 @@ html.dark .detail-map-heading {
   }
 
   .detail-gallery__title {
-    font-size: 28px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   /* Estadísticas en cuadrícula de 2x2 para móviles */
   .detail-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-top: 24px;
-    padding-top: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
   }
 
   .detail-stat-value {
-    font-size: 24px;
+    font-size: 22px;
   }
 
-  .detail-map-wrapper {
-    height: 300px;
+  .detail-action-card,
+  .detail-contact-card {
+    padding: var(--space-md);
   }
-  
+
   .detail-map-section {
-    margin-top: 36px;
-    padding-top: 24px;
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  /* La galería a sangre completa aprovecha todo el ancho del móvil. */
+  .detail-gallery-section {
+    margin-inline: calc(-1 * var(--container-pad));
+  }
+
+  .detail-gallery__overlay-container {
+    padding-inline: var(--container-pad);
+  }
+
+  .detail-gallery-grid--split {
+    grid-template-rows: 1fr 68px;
+  }
+
+  .detail-stat-title {
+    font-size: 10px;
+  }
+}
+
+/* Móviles muy estrechos: una sola columna de estadísticas evita que los
+   números se partan en dos líneas. */
+@media (max-width: 340px) {
+  .detail-stats-grid {
+    grid-template-columns: 1fr;
   }
 }
 
