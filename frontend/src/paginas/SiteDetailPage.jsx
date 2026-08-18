@@ -55,11 +55,20 @@ export const SiteDetailPage = () => {
   const rating = Number(site.rating);
 
   // Gestión de imágenes secundarias
-  const mainImage = site.images && site.images[0] ? resolveImage(site.images[0]) : 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?auto=format&fit=crop&w=800&q=80';
-  const secImage1 = site.images && site.images[1] ? resolveImage(site.images[1]) : 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=800&q=80';
-  const secImage2 = site.images && site.images[2] ? resolveImage(site.images[2]) : 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80';
+  const FALLBACK_MAIN = 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?auto=format&fit=crop&w=800&q=80';
+  const FALLBACK_SEC1 = 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=800&q=80';
+  const FALLBACK_SEC2 = 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80';
+  const mainImage = site.images && site.images[0] ? resolveImage(site.images[0]) : FALLBACK_MAIN;
+  const secImage1 = site.images && site.images[1] ? resolveImage(site.images[1]) : FALLBACK_SEC1;
+  const secImage2 = site.images && site.images[2] ? resolveImage(site.images[2]) : FALLBACK_SEC2;
 
   const hasMultipleImages = site.images && site.images.length >= 3;
+
+  const handleImgError = (fallback) => (e) => {
+    if (e.currentTarget.dataset.fallbackApplied === '1') return;
+    e.currentTarget.dataset.fallbackApplied = '1';
+    e.currentTarget.src = fallback;
+  };
 
   const handleStartRoute = () => {
     setActiveRouteSite(site);
@@ -87,6 +96,7 @@ export const SiteDetailPage = () => {
               /* Imagen principal de la vista: se carga con prioridad. */
               fetchPriority="high"
               decoding="async"
+              onError={handleImgError(FALLBACK_MAIN)}
             />
           </div>
           {hasMultipleImages && (
@@ -98,6 +108,7 @@ export const SiteDetailPage = () => {
                   className="detail-gallery__img"
                   loading="lazy"
                   decoding="async"
+                  onError={handleImgError(FALLBACK_SEC1)}
                 />
               </div>
               <div className="detail-gallery__sub-wrap">
@@ -107,6 +118,7 @@ export const SiteDetailPage = () => {
                   className="detail-gallery__img"
                   loading="lazy"
                   decoding="async"
+                  onError={handleImgError(FALLBACK_SEC2)}
                 />
               </div>
             </div>

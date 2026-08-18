@@ -63,6 +63,7 @@ app.use(helmet({
         'data:',
         'blob:',
         'https://images.unsplash.com',
+        'https://upload.wikimedia.org',
         'https://*.basemaps.cartocdn.com',
         'https://*.tile.openstreetmap.org',
       ],

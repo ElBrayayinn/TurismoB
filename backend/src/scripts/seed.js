@@ -10,7 +10,10 @@
 // para poblar el portal; el administrador debe verificarlos antes de publicar.
 import { initDb, query } from '../db.js';
 
-const IMG = 'https://upload.wikimedia.org/wikipedia/commons';
+// Imágenes de Unsplash (ya permitidas por CSP). Temáticas por tipo de sitio
+// para que las cards nunca queden vacías si Wikimedia falla o está bloqueado.
+const U = (id, w = 1200) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
 
 // Fechas relativas al momento de la siembra, para que el calendario siempre
 // muestre eventos próximos sin tener que reeditar el script.
@@ -30,13 +33,13 @@ const SITES = [
     description:
       'El corazón de Itagüí y punto de encuentro de la vida ciudadana. Rodeado de palmas, bancas y el atrio de la iglesia parroquial, concentra el comercio tradicional del centro y es escenario de retretas, ferias artesanales y las principales celebraciones del municipio.',
     images: [
-      `${IMG}/thumb/b/be/Panoramica_Itag%C3%BC%C3%AD.jpg/1280px-Panoramica_Itag%C3%BC%C3%AD.jpg`,
-      `${IMG}/9/9e/Las_Fiestas_de_la_Industria_el_Comercio_y_la_Cultura_%28Itag%C3%BC%C3%AD%29.jpg`,
+      U('photo-1441974231531-c6227db76b6e'),
+      U('photo-1519331379826-f10be5486c6f'),
     ],
     rating: 4.6,
-    address: 'Calle 51 con Carrera 51, Centro, Itagüí',
-    lat: 6.1719,
-    lng: -75.6113,
+    address: 'Calle 51 # 50-29, Parque Principal, Centro, Itagüí, Antioquia',
+    lat: 6.172386,
+    lng: -75.609416,
     hours: 'Abierto todos los días, 24 horas',
     website: 'https://www.itagui.gov.co',
     tags: ['centro histórico', 'punto de encuentro', 'ferias', 'acceso libre'],
@@ -48,14 +51,13 @@ const SITES = [
     description:
       'El pulmón verde más grande de Itagüí y su espacio recreativo emblemático: lago, senderos arbolados, canchas, piscinas, gimnasio al aire libre y amplias zonas de picnic. Es el destino favorito de las familias los fines de semana y sede de eventos deportivos del área metropolitana.',
     images: [
-      `${IMG}/thumb/3/37/Parque_Ditaires.jpg/1280px-Parque_Ditaires.jpg`,
-      `${IMG}/thumb/a/a9/Inmersion_Ditaires.jpg/1280px-Inmersion_Ditaires.jpg`,
+      U('photo-1501785888041-af3ef285b470'),
+      U('photo-1447752875215-b2761acb3c5d'),
     ],
     rating: 4.8,
-    address: 'Carrera 42 # 77 Sur - 40, Ditaires, Itagüí',
-    // Nominatim / OSM: complejo recreativo Ditaires (NO el CC Mayorca).
-    lat: 6.1686106,
-    lng: -75.6284155,
+    address: 'Carrera 42B # 77 Sur-40, Complejo Recreativo Ditaires, Itagüí, Antioquia',
+    lat: 6.168611,
+    lng: -75.628416,
     hours: 'Martes a domingo, 6:00 a.m. - 6:00 p.m.',
     website: 'https://www.itagui.gov.co',
     tags: ['naturaleza', 'deporte', 'familiar', 'lago', 'senderos'],
@@ -67,13 +69,13 @@ const SITES = [
     description:
       'Recinto ferial y de espectáculos ubicado dentro del complejo Ditaires. Acoge ferias empresariales, congresos, conciertos y las muestras comerciales más grandes del sur del Valle de Aburrá, con capacidad para varios miles de asistentes.',
     images: [
-      `${IMG}/thumb/3/3a/Convenciones_Ditaires_2.jpg/1280px-Convenciones_Ditaires_2.jpg`,
-      `${IMG}/thumb/b/b1/Convenciones_Ditaires_3.jpg/1280px-Convenciones_Ditaires_3.jpg`,
+      U('photo-1540575467063-178a50c2df87'),
+      U('photo-1492684223066-81342ee5ff30'),
     ],
     rating: 4.5,
-    address: 'Complejo Ditaires, Carrera 42, Itagüí',
-    lat: 6.1684092,
-    lng: -75.6282085,
+    address: 'Carrera 42B, Complejo Ditaires (junto al parque recreativo), Itagüí, Antioquia',
+    lat: 6.168409,
+    lng: -75.628209,
     hours: 'Según programación de eventos',
     website: 'https://www.itagui.gov.co',
     tags: ['eventos', 'ferias', 'conciertos', 'congresos'],
@@ -84,11 +86,14 @@ const SITES = [
     zone: 'Comuna 1',
     description:
       'Templo parroquial que preside el parque principal y una de las siluetas más reconocibles de Itagüí. Su arquitectura de estilo neocolonial y sus vitrales la convierten en parada obligada del recorrido por el centro tradicional del municipio.',
-    images: [`${IMG}/b/b3/Itag%C3%BC%C3%AD_iglesia.jpg`],
+    images: [
+      U('photo-1438032005730-c779501ea698'),
+      U('photo-1519904981063-b0cf448d479e'),
+    ],
     rating: 4.7,
-    address: 'Calle 51 # 51-30, Centro, Itagüí',
-    lat: 6.1723,
-    lng: -75.6117,
+    address: 'Calle 51 # 50-63, frente al Parque Principal, Centro, Itagüí, Antioquia',
+    lat: 6.17255,
+    lng: -75.61155,
     hours: 'Lunes a sábado, 6:00 a.m. - 7:00 p.m. · Domingos, 6:00 a.m. - 1:00 p.m.',
     tags: ['patrimonio', 'arquitectura', 'religioso', 'centro'],
   },
@@ -99,12 +104,13 @@ const SITES = [
     description:
       'Espacio público que conserva las chimeneas de ladrillo de las antiguas fábricas textiles, memoria viva del pasado industrial que le dio a Itagüí el nombre de "Ciudad Industrial de Colombia". Hoy combina zonas verdes, plazoletas y arte urbano.',
     images: [
-      `${IMG}/thumb/e/eb/Itag%C3%BC%C3%AD_-_Parque_de_las_Chimeneas.jpg/1280px-Itag%C3%BC%C3%AD_-_Parque_de_las_Chimeneas.jpg`,
+      U('photo-1486406146926-c627a92ad1ab'),
+      U('photo-1477959858617-67f85cf4f1df'),
     ],
     rating: 4.4,
-    address: 'Carrera 50A con Calle 47, Itagüí',
-    lat: 6.169,
-    lng: -75.6065,
+    address: 'Carrera 50A con Calle 47A, Parque de las Chimeneas, Itagüí, Antioquia',
+    lat: 6.16985,
+    lng: -75.60795,
     hours: 'Abierto todos los días, 24 horas',
     tags: ['patrimonio industrial', 'arte urbano', 'zonas verdes', 'acceso libre'],
   },
@@ -115,14 +121,13 @@ const SITES = [
     description:
       'Estación del Ferrocarril de Antioquia en el barrio Yarumito, declarada bien de interés cultural. Su edificación restaurada narra la época en que el tren articulaba la economía del Valle de Aburrá y hoy funciona como espacio cultural y de memoria.',
     images: [
-      `${IMG}/thumb/a/ad/Vista_frontal_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG/1280px-Vista_frontal_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG`,
-      `${IMG}/thumb/b/ba/Vistapanor%C3%A1mica_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG/1280px-Vistapanor%C3%A1mica_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG`,
-      `${IMG}/thumb/f/fa/Vista_diagonal_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG/1280px-Vista_diagonal_de_la_Estaci%C3%B3n_del_Ferrocarril_Itag%C3%BC%C3%AD._Barrio_Yarumito._Itag%C3%BC%C3%AD_%28Antioquia%29._Colombia.JPG`,
+      U('photo-1474487548417-781cb71495f3'),
+      U('photo-1524419986249-348e8fa6ad4a'),
     ],
     rating: 4.5,
-    address: 'Barrio Yarumito, Itagüí',
-    lat: 6.1795,
-    lng: -75.618,
+    address: 'Calle 36A Sur # 46A-50, Barrio Yarumito, Itagüí, Antioquia',
+    lat: 6.17985,
+    lng: -75.61755,
     hours: 'Martes a sábado, 9:00 a.m. - 5:00 p.m.',
     tags: ['patrimonio', 'historia', 'ferrocarril', 'bien de interés cultural'],
   },
@@ -133,13 +138,13 @@ const SITES = [
     description:
       'Sede de la Alcaldía de Itagüí y referente de la arquitectura contemporánea del municipio. Su plazoleta de acceso es escenario de actos cívicos y exposiciones, y allí se atienden los trámites y la oferta institucional de turismo y cultura.',
     images: [
-      `${IMG}/f/f8/Centro_Administrativo_de_Itag%C3%BC%C3%AD_CAMI.jpg`,
-      `${IMG}/thumb/8/81/CAMI-Itagui.JPG/1280px-CAMI-Itagui.JPG`,
+      U('photo-1554469384-e58fac16e23a'),
+      U('photo-1497366216548-37526070297c'),
     ],
     rating: 4.3,
-    address: 'Calle 51 # 51-55, Centro, Itagüí',
-    lat: 6.1737,
-    lng: -75.6104,
+    address: 'Calle 50A # 40-20, Centro Administrativo Municipal (CAMI), Itagüí, Antioquia',
+    lat: 6.17315,
+    lng: -75.60985,
     hours: 'Lunes a viernes, 7:30 a.m. - 12:30 p.m. y 1:30 p.m. - 5:30 p.m.',
     website: 'https://www.itagui.gov.co',
     tags: ['institucional', 'arquitectura', 'trámites', 'centro'],
@@ -151,13 +156,13 @@ const SITES = [
     description:
       'Mercado tradicional donde se concentran los productos frescos de la región: frutas, verduras, hierbas, quesos y los puestos de comida típica antioqueña. Es el mejor lugar para probar una arepa de maíz recién asada y conversar con los comerciantes de siempre.',
     images: [
-      `${IMG}/c/c5/Allmhurach_itagui_ventas.jpg`,
-      `${IMG}/thumb/3/38/Arepas_%28Itag%C3%BC%C3%AD%29.jpg/1280px-Arepas_%28Itag%C3%BC%C3%AD%29.jpg`,
+      U('photo-1488459716781-31db52582fe9'),
+      U('photo-1542838132-92c53300491e'),
     ],
     rating: 4.4,
-    address: 'Carrera 51 con Calle 49, Centro, Itagüí',
-    lat: 6.1708,
-    lng: -75.6122,
+    address: 'Carrera 51 # 48-40, Plaza de Mercado, Centro, Itagüí, Antioquia',
+    lat: 6.17055,
+    lng: -75.61235,
     hours: 'Lunes a sábado, 5:00 a.m. - 5:00 p.m. · Domingos, 5:00 a.m. - 1:00 p.m.',
     tags: ['gastronomía típica', 'mercado', 'productos frescos', 'comercio local'],
   },
@@ -167,11 +172,14 @@ const SITES = [
     zone: 'Comuna 4',
     description:
       'La central de abastos más grande del departamento y uno de los mayores centros de acopio del país, ubicada en jurisdicción de Itagüí. Miles de bodegas y locales mueven a diario frutas, verduras, granos y abarrotes para todo el Valle de Aburrá.',
-    images: [`${IMG}/thumb/4/4f/Panor%C3%A1mica_Itag%C3%BBise%C3%B1a.jpg/1280px-Panor%C3%A1mica_Itag%C3%BBise%C3%B1a.jpg`],
+    images: [
+      U('photo-1578916171728-46686eac8d58'),
+      U('photo-1604719312566-8912e9227c6a'),
+    ],
     rating: 4.2,
-    address: 'Carrera 48 # 32B Sur, Itagüí',
-    lat: 6.162,
-    lng: -75.622,
+    address: 'Carrera 52 # 1 Sur-175, Central Mayorista de Antioquia, Itagüí, Antioquia',
+    lat: 6.186815,
+    lng: -75.591423,
     hours: 'Lunes a sábado, 4:00 a.m. - 6:00 p.m.',
     tags: ['abastos', 'comercio mayorista', 'economía', 'bodegas'],
   },
@@ -181,11 +189,14 @@ const SITES = [
     zone: 'Corregimiento El Manzanillo',
     description:
       'Mirador natural en la zona rural de Itagüí, con senderos entre bosque nativo y vistas panorámicas de todo el Valle de Aburrá. Es el destino preferido para caminatas ecológicas, ciclomontañismo y avistamiento de aves al amanecer.',
-    images: [`${IMG}/thumb/b/be/Panoramica_Itag%C3%BC%C3%AD.jpg/1280px-Panoramica_Itag%C3%BC%C3%AD.jpg`],
+    images: [
+      U('photo-1464822759023-fed622ff2c3b'),
+      U('photo-1506905925346-21bda4d32df4'),
+    ],
     rating: 4.7,
-    address: 'Corregimiento El Manzanillo, zona rural de Itagüí',
-    lat: 6.156,
-    lng: -75.647,
+    address: 'Vía El Manzanillo, Corregimiento El Manzanillo, zona rural, Itagüí, Antioquia',
+    lat: 6.1528,
+    lng: -75.6512,
     hours: 'Abierto todos los días, 6:00 a.m. - 5:00 p.m.',
     tags: ['naturaleza', 'mirador', 'senderismo', 'aves', 'ciclomontañismo'],
   },
@@ -197,21 +208,21 @@ const ANNOUNCEMENTS = [
     title: 'Fiestas de la Industria, el Comercio y la Cultura',
     date: 'Del 18 al 27 de septiembre',
     zone: 'Comuna 1',
-    image: `${IMG}/9/9e/Las_Fiestas_de_la_Industria_el_Comercio_y_la_Cultura_%28Itag%C3%BC%C3%AD%29.jpg`,
+    image: U('photo-1533174072545-7a4b6ad7a6c3'),
     cta: 'Ver programación',
   },
   {
     title: 'Domingos de ciclovía y recreación en Parque Ditaires',
     date: 'Todos los domingos, 8:00 a.m. - 12:00 m.',
     zone: 'Comuna 3',
-    image: `${IMG}/thumb/3/37/Parque_Ditaires.jpg/1280px-Parque_Ditaires.jpg`,
+    image: U('photo-1558611848-73f7eb4001a1'),
     cta: 'Cómo llegar',
   },
   {
     title: 'Ruta patrimonial: chimeneas y estación del ferrocarril',
     date: 'Sábados, 9:00 a.m. · Inscripción gratuita',
     zone: 'Comuna 2',
-    image: `${IMG}/thumb/e/eb/Itag%C3%BC%C3%AD_-_Parque_de_las_Chimeneas.jpg/1280px-Itag%C3%BC%C3%AD_-_Parque_de_las_Chimeneas.jpg`,
+    image: U('photo-1469854523086-cc02fe5d8800'),
     cta: 'Reservar cupo',
   },
 ];
