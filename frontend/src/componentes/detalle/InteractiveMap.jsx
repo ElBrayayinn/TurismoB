@@ -1,10 +1,12 @@
 // src/componentes/detalle/InteractiveMap.jsx
-import { RiNavigationLine } from 'react-icons/ri';
+import { RiNavigationLine, RiMapPin2Line } from 'react-icons/ri';
 import { buildGoogleMapsEmbedUrl } from '../../utilidades/googleMaps';
 import './InteractiveMap.css';
 
 export const InteractiveMap = ({ site, onStartRoute }) => {
   const embedUrl = buildGoogleMapsEmbedUrl(site);
+  const placeName = typeof site?.name === 'string' ? site.name.trim() : '';
+  const placeAddress = typeof site?.address === 'string' ? site.address.trim() : '';
 
   if (!embedUrl) {
     return (
@@ -24,7 +26,7 @@ export const InteractiveMap = ({ site, onStartRoute }) => {
     );
   }
 
-  const title = site?.name ? `Mapa de ${site.name}` : 'Ubicación geográfica';
+  const title = placeName ? `Mapa de ${placeName}` : 'Ubicación geográfica';
 
   return (
     <div className="map-container">
@@ -36,6 +38,16 @@ export const InteractiveMap = ({ site, onStartRoute }) => {
         referrerPolicy="no-referrer-when-downgrade"
         allowFullScreen
       />
+
+      {(placeName || placeAddress) && (
+        <div className="map-place-label" aria-hidden="false">
+          <RiMapPin2Line className="map-place-label__icon" aria-hidden="true" />
+          <div className="map-place-label__text">
+            {placeName && <strong className="map-place-label__name">{placeName}</strong>}
+            {placeAddress && <span className="map-place-label__address">{placeAddress}</span>}
+          </div>
+        </div>
+      )}
 
       {onStartRoute && (
         <div className="map-actions">

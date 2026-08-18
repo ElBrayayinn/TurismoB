@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Map, AdvancedMarker, useMap, ColorScheme } from '@vis.gl/react-google-maps';
 import { RiMapPin2Line, RiSearchLine } from 'react-icons/ri';
 import { geocodeApi } from '../../utilidades/api';
+import { useIsDarkTheme } from '../../hooks/useDarkMode';
 import './LocationPicker.css';
 
 const ITAGUI_CENTER = { lat: 6.1724, lng: -75.6091 };
@@ -37,15 +38,7 @@ function MapController({ center, onMove }) {
 
 export function LocationPicker({ address, lat, lng, onChange, showAlert }) {
   const [searching, setSearching] = useState(false);
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-
-  useEffect(() => {
-    const observer = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains('dark'))
-    );
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+  const isDark = useIsDarkTheme();
 
   const hasCoords =
     lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
@@ -60,11 +53,12 @@ export function LocationPicker({ address, lat, lng, onChange, showAlert }) {
     setSearching(true);
     try {
       const r = await geocodeApi.search(address);
-      onChange(r.lat, r.lng);
-      if (!r.found) {
+      if (r.found && r.lat != null && r.lng != null) {
+        onChange(r.lat, r.lng);
+      } else {
         showAlert?.(
-          'Ubicación aproximada',
-          'No se encontró la dirección exacta. Arrastra el marcador al punto correcto en el mapa.',
+          'Ubicación no encontrada',
+          'No se encontró la dirección exacta. Haz clic en el mapa o arrastra el marcador al punto correcto.',
           'warning'
         );
       }

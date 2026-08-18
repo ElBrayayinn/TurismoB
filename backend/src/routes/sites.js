@@ -54,10 +54,17 @@ sitesRouter.post('/', requireAuth, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Nombre, descripción y dirección son obligatorios.' });
   }
 
-  // El backend resuelve las coordenadas a partir de la dirección.
+  // El backend resuelve las coordenadas a partir de la dirección solo si hay hit real.
   let { lat, lng } = b;
   if (lat == null || lng == null) {
-    ({ lat, lng } = await geocodeAddress(b.address));
+    const geo = await geocodeAddress(b.address);
+    if (geo.found) {
+      lat = geo.lat;
+      lng = geo.lng;
+    } else {
+      lat = null;
+      lng = null;
+    }
   }
 
   const category = CATEGORIES.includes(b.category) ? b.category : 'Comercio';
@@ -99,10 +106,14 @@ sitesRouter.put('/:id', requireAuth, asyncHandler(async (req, res) => {
   const address = b.address ?? existing.address;
 
   // Re-geocodificar solo si cambió la dirección y no vienen coords explícitas.
-  let lat = b.lat ?? existing.lat;
-  let lng = b.lng ?? existing.lng;
+  let lat = b.lat !== undefined ? b.lat : existing.lat;
+  let lng = b.lng !== undefined ? b.lng : existing.lng;
   if (b.address && b.address !== existing.address && (b.lat == null || b.lng == null)) {
-    ({ lat, lng } = await geocodeAddress(address));
+    const geo = await geocodeAddress(address);
+    if (geo.found) {
+      lat = geo.lat;
+      lng = geo.lng;
+    }
   }
 
   const category = b.category != null

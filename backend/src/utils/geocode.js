@@ -1,12 +1,8 @@
 // backend/src/utils/geocode.js
 // Geocodificación de direcciones vía Nominatim (OpenStreetMap), afinada para
-// Itagüí (Antioquia, Colombia). Devuelve { lat, lng, found }. `found` indica si
-// se resolvió una dirección real (true) o si se usó el centro de Itagüí como
-// último recurso (false) — el panel usa ese dato para pedir ajuste manual.
-const ITAGUI_FALLBACK = { lat: 6.1724, lng: -75.6091 };
-
-// Caja delimitadora aproximada de Itagüí (left,top,right,bottom) para sesgar
-// los resultados a la zona correcta.
+// Itagüí (Antioquia, Colombia). Devuelve { lat, lng, found }.
+// Si no hay coincidencia real: lat/lng = null y found = false (NO se inventa
+// el centro del parque principal, para no etiquetar todos los sitios igual).
 const ITAGUI_VIEWBOX = '-75.6650,6.2100,-75.5650,6.1150';
 
 const HEADERS = {
@@ -39,11 +35,11 @@ const cleanStreet = (address) =>
  *  1) Búsqueda estructurada (street/city/state/country) restringida a Colombia.
  *  2) Búsqueda libre acotada a la caja de Itagüí (bounded).
  *  3) Búsqueda libre en Colombia sin acotar (por si el punto queda al borde).
- * Si todo falla, devuelve el centro de Itagüí con found=false.
+ * Si todo falla, lat/lng quedan null (found=false).
  */
 export async function geocodeAddress(address) {
   if (!address || typeof address !== 'string' || !address.trim()) {
-    return { ...ITAGUI_FALLBACK, found: false };
+    return { lat: null, lng: null, found: false };
   }
 
   const street = cleanStreet(address) || address;
@@ -74,5 +70,5 @@ export async function geocodeAddress(address) {
   if (hit) {
     return { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon), found: true };
   }
-  return { ...ITAGUI_FALLBACK, found: false };
+  return { lat: null, lng: null, found: false };
 }
