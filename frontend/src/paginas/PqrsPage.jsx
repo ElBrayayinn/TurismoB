@@ -41,18 +41,26 @@ const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccio
     <div className="form-group select-group">
       <label>{label}</label>
       <div className="custom-dropdown" onClick={(e) => e.stopPropagation()}>
-        <div 
+        {/* Botones reales en lugar de <div onClick>: navegables con teclado y
+            anunciados correctamente por lectores de pantalla. */}
+        <button
+          type="button"
           className={`custom-dropdown-trigger ${isOpen ? 'open' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
         >
           <span>{selectedOption ? selectedOption.label : placeholder}</span>
-          <RiArrowDownSLine className={`dropdown-arrow ${isOpen ? 'open' : ''}`} />
-        </div>
+          <RiArrowDownSLine className={`dropdown-arrow ${isOpen ? 'open' : ''}`} aria-hidden="true" />
+        </button>
         {isOpen && (
-          <div className="custom-dropdown-menu">
+          <div className="custom-dropdown-menu" role="listbox" aria-label={label}>
             {options.map(opt => (
-              <div 
-                key={opt.value} 
+              <button
+                type="button"
+                key={opt.value}
+                role="option"
+                aria-selected={value === opt.value}
                 className={`custom-dropdown-option ${value === opt.value ? 'selected' : ''}`}
                 onClick={() => {
                   onChange(opt.value);
@@ -60,7 +68,7 @@ const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccio
                 }}
               >
                 {opt.label}
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -92,6 +100,10 @@ export const PqrsPage = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  // Evita registrar la misma solicitud dos veces si se toca "Enviar" repetido
+  // (habitual en móvil cuando la red tarda en responder).
+  const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Estado para modal personalizado
   const [modal, setModal] = useState({
@@ -161,6 +173,7 @@ export const PqrsPage = () => {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setIsUploading(true);
     try {
       // La imagen se sube al servidor y se guarda solo su URL.
       const url = await uploadApi.publicImage(file);
@@ -168,11 +181,14 @@ export const PqrsPage = () => {
     } catch (err) {
       console.error(err);
       showAlert('Error de Imagen', err.message || 'No se pudo subir la imagen seleccionada.', 'danger');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSending) return;
 
     // Validaciones básicas de contacto
     if (!formData.name || !formData.email || !formData.subject || !formData.details) {
@@ -189,11 +205,14 @@ export const PqrsPage = () => {
     }
 
     // Enviar la solicitud al backend.
+    setIsSending(true);
     try {
       await addPqrs(formData);
     } catch (err) {
       showAlert('Error al Enviar', err.message || 'No se pudo registrar la solicitud. Inténtalo de nuevo.', 'danger');
       return;
+    } finally {
+      setIsSending(false);
     }
     setIsSubmitted(true);
 
@@ -280,6 +299,7 @@ export const PqrsPage = () => {
                             value={formData.name} 
                             onChange={handleChange}
                             placeholder="Ej. Juan Pérez o Inversiones S.A.S." 
+                            autoComplete="name"
                             required
                           />
                         </div>
@@ -293,6 +313,8 @@ export const PqrsPage = () => {
                             value={formData.email} 
                             onChange={handleChange}
                             placeholder="correo@ejemplo.com" 
+                            autoComplete="email"
+                            inputMode="email"
                             required
                           />
                         </div>
@@ -382,6 +404,8 @@ export const PqrsPage = () => {
                             value={formData.phone} 
                             onChange={handleChange}
                             placeholder="Ej. 6043730000 o 3123456789" 
+                            autoComplete="tel"
+                            inputMode="tel"
                             required
                           />
                         </div>
@@ -445,7 +469,7 @@ export const PqrsPage = () => {
                               className="image-file-input"
                             />
                             <label htmlFor="image-file" className="file-upload-label-btn">
-                              Seleccionar Foto Local
+                              {isUploading ? 'Subiendo foto…' : 'Seleccionar Foto Local'}
                             </label>
                           </div>
                           <div className="image-url-fallback">
@@ -511,6 +535,7 @@ export const PqrsPage = () => {
                             type="text" 
                             id="website" 
                             name="website" 
+                            inputMode="url"
                             value={formData.website} 
                             onChange={handleChange}
                             placeholder="www.ejemplo.com" 
@@ -540,9 +565,9 @@ export const PqrsPage = () => {
                         Siguiente
                       </button>
                     ) : (
-                      <button type="submit" className="btn-primary form-submit-btn" style={{ margin: 0 }}>
-                        <RiMailSendLine size={18} />
-                        <span>Enviar Solicitud</span>
+                      <button type="submit" className="btn-primary form-submit-btn" style={{ margin: 0 }} disabled={isSending}>
+                        <RiMailSendLine size={18} aria-hidden="true" />
+                        <span>{isSending ? 'Enviando…' : 'Enviar Solicitud'}</span>
                       </button>
                     )}
                   </div>
@@ -561,6 +586,7 @@ export const PqrsPage = () => {
                         value={formData.name} 
                         onChange={handleChange}
                         placeholder="Juan Pérez" 
+                        autoComplete="name"
                         required
                       />
                     </div>
@@ -574,6 +600,8 @@ export const PqrsPage = () => {
                         value={formData.email} 
                         onChange={handleChange}
                         placeholder="correo@ejemplo.com" 
+                        autoComplete="email"
+                        inputMode="email"
                         required
                       />
                     </div>
@@ -612,9 +640,9 @@ export const PqrsPage = () => {
                     ></textarea>
                   </div>
 
-                  <button type="submit" className="btn-primary form-submit-btn">
-                    <RiMailSendLine size={18} />
-                    <span>Enviar Solicitud</span>
+                  <button type="submit" className="btn-primary form-submit-btn" disabled={isSending}>
+                    <RiMailSendLine size={18} aria-hidden="true" />
+                    <span>{isSending ? 'Enviando…' : 'Enviar Solicitud'}</span>
                   </button>
                 </div>
               )}

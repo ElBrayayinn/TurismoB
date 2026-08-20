@@ -12,10 +12,27 @@
   flex-direction: column;
   cursor: pointer;
   position: relative;
+  min-width: 0; /* deja que el texto se recorte en lugar de desbordar la grilla */
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   opacity: 0;
   animation: cardEnter 0.38s ease forwards;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+/* Toda la tarjeta es un enlace real: accesible con teclado e indexable. */
+.site-card__link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-card__link:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 12px;
 }
 
 .site-card:hover {
@@ -24,7 +41,26 @@
   box-shadow: 0 20px 38px rgba(0, 48, 135, 0.06);
 }
 
-/* Animaciones escalonadas de carga */
+/* En pantallas táctiles el "hover" se queda pegado tras el toque: se anula. */
+@media (hover: none) {
+  .site-card:hover {
+    transform: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  }
+
+  .site-card:hover .site-card__image-wrap img {
+    transform: none;
+  }
+
+  /* Sin hover, "Explorar" debe verse siempre: es la pista de que se puede tocar. */
+  .site-card__action-text {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Animaciones escalonadas de carga (se desactivan si el usuario pide menos
+   movimiento; ver animations.css) */
 .site-card:nth-child(1) { animation-delay: 0.00s; }
 .site-card:nth-child(2) { animation-delay: 0.07s; }
 .site-card:nth-child(3) { animation-delay: 0.14s; }
@@ -36,11 +72,17 @@
 
 .site-card__image-wrap {
   width: 100%;
-  height: 200px;
+  /* Proporción fija en lugar de alto fijo: la imagen nunca se deforma ni
+     provoca saltos de layout (CLS) al cargar en móvil. */
+  aspect-ratio: 16 / 10;
+  height: auto;
+  min-height: 150px;
+  max-height: 220px;
   overflow: hidden;
   position: relative;
   border-radius: 12px;
   background-color: var(--color-surface-alt);
+  flex-shrink: 0;
 }
 
 .site-card__image-wrap img {
@@ -89,7 +131,7 @@
 
 .site-card__name {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: clamp(16px, 1.1rem + 0.3vw, 19px);
   font-weight: 600;
   color: var(--color-text-primary);
   line-height: 1.3;
@@ -119,6 +161,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--color-border-faint);
@@ -128,8 +171,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   color: var(--color-text-muted);
   transition: color 0.2s ease;
+}
+
+.site-card__meta-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .site-card__meta-icon {
@@ -157,6 +207,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
   color: var(--color-text-muted);
   transition: all 0.2s ease;
 }
@@ -300,5 +351,40 @@ html.dark .site-card__tag-badge {
   height: 22px;
   width: 60px;
   border-radius: var(--radius-xs);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .site-card {
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .site-card__body {
+    padding: 12px 4px 2px;
+    gap: 6px;
+  }
+
+  /* Con muchas etiquetas la tarjeta crecía demasiado en móvil: se limita a
+     dos líneas y el resto se recorta. */
+  .site-card__tags {
+    max-height: 52px;
+    overflow: hidden;
+  }
+}
+
+/* Móviles pequeños: la imagen se hace un poco más baja para que el título y
+   la descripción entren sin hacer scroll por tarjeta. */
+@media (max-width: 400px) {
+  .site-card__image-wrap {
+    aspect-ratio: 16 / 9;
+    min-height: 132px;
+  }
+
+  .site-card__desc {
+    min-height: 0;
+  }
 }
 

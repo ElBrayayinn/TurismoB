@@ -17,7 +17,10 @@
   position: relative;
   width: 100%;
   max-width: 520px;
+  /* dvh en lugar de vh: con la barra de URL del móvil visible, 85vh dejaba el
+     final del modal (y su scroll) fuera de la pantalla. */
   max-height: 85vh;
+  max-height: 85dvh;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
@@ -29,13 +32,13 @@
 
 .event-modal__close {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -83,6 +86,8 @@
 .event-modal__body {
   padding: 16px 22px 22px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .event-modal__empty {
@@ -168,3 +173,35 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ============================================================
+   MÓVIL — hoja inferior deslizable
+   ============================================================ */
+@media (max-width: 600px) {
+  .event-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .event-modal {
+    max-width: 100%;
+    max-height: 90dvh;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: none;
+    animation: slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .event-modal__header {
+    padding: 18px 52px 14px 18px;
+  }
+
+  .event-modal__body {
+    padding: 14px 18px calc(20px + var(--safe-bottom));
+  }
+
+  /* El nombre del evento y la etiqueta de Google se apilan si no caben. */
+  .event-modal__item-head {
+    flex-wrap: wrap;
+  }
+}
+

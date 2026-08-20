@@ -1,5 +1,5 @@
 // src/hooks/useRoute.js
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 // Fórmula Haversine: distancia en km entre dos coordenadas (línea recta).
 const getHaversineDistance = (p1, p2) => {
@@ -15,6 +15,15 @@ const getHaversineDistance = (p1, p2) => {
     Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+};
+
+/** Coordenadas utilizables (números finitos), venga el dato como sea. */
+export const toLatLng = (obj) => {
+  if (!obj) return null;
+  const lat = Number(obj.lat);
+  const lng = Number(obj.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
 };
 
 // Distancia y duración REALES por carretera vía Google Directions API (mismo
@@ -37,125 +46,113 @@ async function fetchGoogleRoute(origin, destination, mode) {
 }
 
 /**
- * Seguimiento de ruta REAL (sin simulación). El avance, la distancia y el tiempo
- * restante se calculan a partir de la ubicación GPS real del dispositivo
- * (watchPosition). La estimación inicial usa la distancia real por carretera.
+ * Seguimiento de ruta REAL (sin simulación).
+ *
+ * El avance, la distancia y el tiempo restante son valores DERIVADOS de
+ * `livePosition` (la ubicación GPS compartida por AppProvider, un único
+ * watchPosition en toda la app). No se guardan en estado: así no hay renders en
+ * cascada ni riesgo de que la barra de progreso quede desfasada respecto al GPS.
+ *
+ * Al iniciar se consulta Google Directions para conocer la distancia y duración
+ * reales por carretera; con esa relación se corrige la estimación en línea recta
+ * de cada lectura (`roadFactor` y el ritmo min/km reportado por Google), en
+ * lugar de suponer siempre 5 km/h a pie y 30 km/h en auto.
+ *
+ * @param {{lat:number,lng:number}} destination - coordenadas del sitio.
+ * @param {'walk'|'car'} mode
+ * @param {{lat:number,lng:number}|null} livePosition - ubicación GPS en vivo.
+ * @param {string|null} positionError - error de geolocalización, si hay.
  */
-export const useRoute = (destination, mode = 'walk') => {
+export const useRoute = (destination, mode = 'walk', livePosition = null, positionError = null) => {
   const [isActive, setIsActive] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [distanceRemaining, setDistanceRemaining] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [currentPosition, setCurrentPosition] = useState(null);
-  const [error, setError] = useState(null);
-  const [arrived, setArrived] = useState(false);
+  const [startError, setStartError] = useState(null);
+  // { origin, straightKm, roadKm, minPerKm } medidos al iniciar la ruta.
+  const [baseline, setBaseline] = useState(null);
 
-  const startPositionRef = useRef(null);
-  const initialDistanceRef = useRef(0);
-  const watchIdRef = useRef(null);
+  const fallbackSpeedKmh = mode === 'walk' ? 5 : 30;
 
-  const speedKmh = mode === 'walk' ? 5 : 30;
+  const target = toLatLng(destination);
+  const live = toLatLng(livePosition);
 
   const startRoute = useCallback((userCoords) => {
-    if (!userCoords || !destination) {
-      setError('No se pudo determinar tu ubicación. Activa el GPS y concede el permiso de ubicación.');
+    const origin = toLatLng(userCoords);
+    const dest = toLatLng(destination);
+
+    if (!origin) {
+      setStartError('No se pudo determinar tu ubicación. Activa el GPS y concede el permiso de ubicación.');
       return;
     }
-    setError(null);
-    setArrived(false);
-    startPositionRef.current = userCoords;
-    setCurrentPosition(userCoords);
+    // Antes, un sitio sin coordenadas producía distancias absurdas (null → 0)
+    // y hacía fallar la llamada a Google Directions.
+    if (!dest) {
+      setStartError('Este sitio aún no tiene una ubicación exacta registrada. Avísale al administrador.');
+      return;
+    }
+
+    const straightKm = getHaversineDistance(origin, dest);
+
+    setStartError(null);
+    setBaseline({ origin, straightKm, roadKm: straightKm, minPerKm: 60 / fallbackSpeedKmh });
     setIsActive(true);
-    setProgress(0);
 
-    // Estimación inmediata en línea recta mientras llega la de carretera.
-    const straight = getHaversineDistance(userCoords, destination);
-    initialDistanceRef.current = straight;
-    setDistanceRemaining(straight);
-    setTimeRemaining(Math.max(1, Math.round((straight / speedKmh) * 60)));
-
-    // Estimación inicial precisa por carretera (real) vía Google Directions.
-    fetchGoogleRoute(userCoords, destination, mode)
+    // Estimación precisa por carretera. Llega en un callback asíncrono, así que
+    // actualizar estado aquí es correcto (no es un render en cascada).
+    fetchGoogleRoute(origin, dest, mode)
       .then(({ distanceKm, durationMin }) => {
-        initialDistanceRef.current = distanceKm;
-        setDistanceRemaining(distanceKm);
-        setTimeRemaining(Math.max(1, Math.round(durationMin)));
+        setBaseline({
+          origin,
+          straightKm,
+          roadKm: distanceKm,
+          minPerKm: distanceKm > 0 ? durationMin / distanceKm : 60 / fallbackSpeedKmh,
+        });
       })
       .catch(() => { /* se conserva la estimación en línea recta */ });
-  }, [destination, mode, speedKmh]);
+  }, [destination, mode, fallbackSpeedKmh]);
 
   const stopRoute = useCallback(() => {
     setIsActive(false);
-    setProgress(0);
-    setDistanceRemaining(0);
-    setTimeRemaining(0);
-    setCurrentPosition(null);
-    setArrived(false);
-    setError(null);
-    startPositionRef.current = null;
-
-    if (watchIdRef.current !== null && navigator.geolocation) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
+    setStartError(null);
+    setBaseline(null);
   }, []);
 
-  // Seguimiento con GPS REAL: el progreso refleja tu movimiento real, no un temporizador.
-  useEffect(() => {
-    if (!isActive || !destination || !startPositionRef.current) return;
+  // ─── Métricas derivadas ───────────────────────────────────
+  let distanceRemaining = 0;
+  let timeRemaining = 0;
+  let progress = 0;
+  let arrived = false;
 
-    if (!navigator.geolocation) {
-      // Se difiere para no hacer setState síncrono dentro del efecto.
-      Promise.resolve().then(() => setError('Este navegador no soporta geolocalización.'));
-      return;
-    }
+  if (isActive && target && baseline) {
+    // Mientras no llega la primera lectura del GPS se usa el punto de partida.
+    const from = live || baseline.origin;
+    if (from) {
+      const straightRemaining = getHaversineDistance(from, target);
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const cur = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCurrentPosition(cur);
-        setError(null);
+      // Proporción entre el recorrido real por calles y la línea recta inicial.
+      const roadFactor = baseline.straightKm > 0 ? baseline.roadKm / baseline.straightKm : 1;
+      distanceRemaining = straightRemaining * roadFactor;
+      timeRemaining = Math.max(1, Math.round(distanceRemaining * baseline.minPerKm));
 
-        const remaining = getHaversineDistance(cur, destination);
-        setDistanceRemaining(remaining);
-        setTimeRemaining(Math.max(1, Math.round((remaining / speedKmh) * 60)));
+      progress =
+        baseline.straightKm > 0
+          ? Math.round(Math.max(0, Math.min(100, (1 - straightRemaining / baseline.straightKm) * 100)))
+          : 0;
 
-        const total = initialDistanceRef.current || getHaversineDistance(startPositionRef.current, destination);
-        const traveled = total - remaining;
-        const pct = total > 0 ? Math.max(0, Math.min(100, (traveled / total) * 100)) : 0;
-        setProgress(Math.round(pct));
-
-        // Llegada: dentro de ~30 m del destino.
-        if (remaining <= 0.03) {
-          setProgress(100);
-          setArrived(true);
-        }
-      },
-      (err) => {
-        setError(
-          err.code === 1
-            ? 'Permiso de ubicación denegado. Actívalo para seguir la ruta en tiempo real.'
-            : 'No se pudo obtener tu ubicación GPS. Revisa la señal e inténtalo de nuevo.'
-        );
-      },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
-    );
-
-    return () => {
-      if (watchIdRef.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
+      // Llegada: dentro de ~30 m del destino (en línea recta).
+      if (straightRemaining <= 0.03) {
+        progress = 100;
+        arrived = true;
       }
-    };
-  }, [isActive, destination, mode, speedKmh]);
+    }
+  }
 
   return {
     progress,
     distanceRemaining,
     timeRemaining,
     isActive,
-    currentPosition,
-    error,
+    currentPosition: live,
+    // Un error de GPS en curso tiene prioridad sobre el de arranque.
+    error: (isActive && positionError) || startError || null,
     arrived,
     startRoute,
     stopRoute,

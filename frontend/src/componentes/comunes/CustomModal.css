@@ -2,10 +2,7 @@
 
 .custom-modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background-color: rgba(17, 24, 39, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -14,6 +11,9 @@
   justify-content: center;
   z-index: 9999;
   padding: 16px;
+  /* Respeta el notch y la barra de gestos. */
+  padding-top: max(16px, var(--safe-top));
+  padding-bottom: max(16px, var(--safe-bottom));
   animation: fadeInModal 0.25s ease-out;
 }
 
@@ -24,8 +24,12 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 440px;
+  /* Un mensaje largo hace scroll dentro del modal en lugar de desbordar la
+     pantalla del móvil. */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   position: relative;
-  overflow: hidden;
   animation: slideInModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -36,14 +40,16 @@ html.dark .custom-modal-container {
 
 .custom-modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 8px;
+  right: 8px;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 4px;
+  /* Objetivo táctil de 40px sin agrandar visualmente el icono. */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -118,13 +124,49 @@ html.dark .custom-modal__icon--info {
 }
 
 .custom-modal-btn {
-  padding: 10px 18px;
+  padding: 12px 18px;
+  min-height: var(--tap-min);
   font-size: 14px;
   font-weight: 600;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
+/* ============================================================
+   MÓVIL — hoja inferior con botones a ancho completo
+   ============================================================ */
+@media (max-width: 480px) {
+  .custom-modal-backdrop {
+    /* El diálogo aparece abajo, al alcance del pulgar. */
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .custom-modal-container {
+    max-width: 100%;
+    max-height: 88dvh;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: none;
+    animation: slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .custom-modal-content {
+    padding: 20px 20px calc(20px + var(--safe-bottom));
+  }
+
+  /* Acción principal arriba (column-reverse) y ambas a ancho completo:
+     imposible fallar el toque. */
+  .custom-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .custom-modal-btn {
+    width: 100%;
+  }
+}
+/* La animación slideUpSheet está definida en estilos/animations.css. */
 
 .custom-modal-btn--cancel {
   background-color: var(--color-surface-alt);

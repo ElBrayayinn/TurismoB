@@ -1,8 +1,9 @@
 // src/componentes/calendario/EventDetailModal.jsx
-import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCloseLine, RiTimeLine, RiMapPin2Line, RiGoogleFill, RiCalendarEventLine } from 'react-icons/ri';
 import { MONTH_NAMES } from '../../utilidades/events';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import './EventDetailModal.css';
 
 // Título legible en español a partir de una clave YYYY-MM-DD.
@@ -13,26 +14,26 @@ const formatDayTitle = (dateKey) => {
 };
 
 export const EventDetailModal = ({ isOpen, dateKey, events, onClose }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 
   return createPortal(
     <div className="event-modal-backdrop" onClick={onClose}>
-      <div className="event-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="event-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Eventos del ${formatDayTitle(dateKey)}`}
+      >
         <button className="event-modal__close" onClick={onClose} aria-label="Cerrar">
           <RiCloseLine />
         </button>
 
         <div className="event-modal__header">
-          <RiCalendarEventLine className="event-modal__header-icon" />
+          <RiCalendarEventLine className="event-modal__header-icon" aria-hidden="true" />
           <div>
             <p className="event-modal__eyebrow">Eventos del día</p>
             <h3 className="event-modal__title">{formatDayTitle(dateKey)}</h3>

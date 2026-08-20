@@ -1,12 +1,14 @@
 /* src/pages/PqrsPage.css */
 
 .pqrs-page {
-  padding-top: 2rem;
-  padding-bottom: 4rem;
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-xl);
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 160px);
+  /* align-items: center centraba verticalmente un formulario alto y, en móvil,
+     podía dejar el inicio del wizard por encima del área visible. */
+  align-items: flex-start;
+  min-height: calc(100dvh - var(--header-h) - 120px);
 }
 
 .pqrs-container {
@@ -19,7 +21,8 @@
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 2.5rem;
+  /* Relleno fluido: 1.25rem en móvil → 2.5rem en escritorio. */
+  padding: clamp(1.25rem, 0.6rem + 3vw, 2.5rem);
 }
 
 .pqrs-header {
@@ -30,7 +33,7 @@
 .pqrs-header h1 {
   font-family: var(--font-display);
   color: var(--color-primary);
-  font-size: 2rem;
+  font-size: var(--fs-h1);
   font-weight: 700;
   margin-bottom: 0.75rem;
 }
@@ -322,15 +325,78 @@ html.dark .file-upload-label-btn:hover {
 }
 
 @media (max-width: 768px) {
-  .pqrs-form-card,
-  .pqrs-success-card {
-    padding: 1.5rem;
-  }
   .stepper-wrapper {
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
   }
+
+  /* Se conserva la etiqueta del paso ACTUAL (el usuario necesita saber dónde
+     está); las demás se ocultan para que no se amontonen. Antes se ocultaban
+     todas y el wizard quedaba como cuatro círculos sin contexto. */
   .step-label {
-    display: none; /* Ocultar textos largos en móvil para evitar amontonamiento */
+    display: none;
+  }
+
+  .step-item.active .step-label {
+    display: block;
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  /* Deja aire abajo para la etiqueta del paso activo, ya posicionada. */
+  .stepper-wrapper {
+    padding-bottom: 22px;
+  }
+
+  .form-navigation-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Carga de imagen: el botón y el campo de URL se apilan a ancho completo. */
+  .image-upload-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .file-input-wrapper,
+  .file-upload-label-btn {
+    width: 100%;
+  }
+
+  .image-url-fallback {
+    min-width: 0;
+  }
+
+  .form-image-preview {
+    max-width: 100%;
+  }
+}
+
+/* Móviles pequeños: los pasos se aprietan, así que se reduce el círculo. */
+@media (max-width: 380px) {
+  .stepper-wrapper {
+    padding-inline: 0;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .stepper-wrapper::before {
+    top: 14px;
+    left: 24px;
+    right: 24px;
+  }
+
+  .step-item.active .step-label {
+    top: 36px;
+    font-size: 10px;
   }
 }
 
@@ -430,5 +496,11 @@ html.dark .file-upload-label-btn:hover {
 
 .form-navigation-actions button {
   min-width: 120px;
+  min-height: var(--tap-min);
+}
+
+/* El botón de subir foto también debe cumplir el objetivo táctil. */
+.file-upload-label-btn {
+  min-height: var(--tap-min);
 }
 

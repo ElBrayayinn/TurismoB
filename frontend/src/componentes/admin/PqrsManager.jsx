@@ -176,23 +176,25 @@ export const PqrsManager = ({
                       className={`pqrs-row ${selectedPqrs && selectedPqrs.id === pqrs.id ? 'pqrs-row--selected' : ''}`}
                       onClick={() => setSelectedPqrs(pqrs)}
                     >
-                      <td className="font-mono">{pqrs.date}</td>
-                      <td>
+                      {/* data-label permite apilar la tabla como tarjetas en móvil
+                          (ver AdminDashboard.css) sin duplicar el marcado. */}
+                      <td className="font-mono pqrs-date-td" data-label="Fecha">{pqrs.date}</td>
+                      <td data-label="Remitente">
                         <div className="pqrs-sender-info">
                           <span className="sender-name">{pqrs.name}</span>
                           <span className="sender-email">{pqrs.email}</span>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Tipo">
                         <span className="pqrs-type-tag">{getTypeLabel(pqrs.type)}</span>
                       </td>
-                      <td className="pqrs-subject-td">{pqrs.subject}</td>
-                      <td>
+                      <td className="pqrs-subject-td" data-label="Asunto">{pqrs.subject}</td>
+                      <td data-label="Estado">
                         <span className={`pqrs-badge ${getStatusBadgeClass(pqrs.status)}`}>
                           {getStatusLabel(pqrs.status)}
                         </span>
                       </td>
-                      <td>
+                      <td className="pqrs-actions-td">
                         <div className="pqrs-action-buttons" onClick={(e) => e.stopPropagation()}>
                           {pqrs.status === 'pending' && (
                             <>
@@ -200,6 +202,7 @@ export const PqrsManager = ({
                                 className="action-btn action-btn--approve" 
                                 onClick={() => handleValidate(pqrs)}
                                 title="Validar y Cargar en el Sistema"
+                                aria-label={`Validar la solicitud de ${pqrs.name}`}
                               >
                                 <RiCheckLine />
                               </button>
@@ -207,6 +210,7 @@ export const PqrsManager = ({
                                 className="action-btn action-btn--reject" 
                                 onClick={() => handleReject(pqrs.id)}
                                 title="Rechazar solicitud"
+                                aria-label={`Rechazar la solicitud de ${pqrs.name}`}
                               >
                                 <RiCloseLine />
                               </button>
@@ -216,6 +220,7 @@ export const PqrsManager = ({
                             className="action-btn action-btn--delete" 
                             onClick={() => handleDelete(pqrs.id)}
                             title="Eliminar registro"
+                            aria-label={`Eliminar la solicitud de ${pqrs.name}`}
                           >
                             <RiDeleteBinLine />
                           </button>

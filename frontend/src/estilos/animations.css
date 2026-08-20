@@ -28,6 +28,12 @@
   to   { opacity: 1; }
 }
 
+/* Hoja inferior (bottom sheet): patrón de los modales en móvil. */
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 /* Entrada de página / transición de ruta */
 @keyframes pageEnter {
   from { opacity: 0; transform: translateY(12px); }

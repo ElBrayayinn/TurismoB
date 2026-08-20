@@ -49,8 +49,6 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
   z-index: 9005;
   cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
   transition: max-width 0.4s cubic-bezier(0.25, 1, 0.5, 1),
               max-height 0.4s cubic-bezier(0.25, 1, 0.5, 1),
               padding 0.4s cubic-bezier(0.25, 1, 0.5, 1),
@@ -63,6 +61,15 @@
               border-color 0.2s ease,
               background-color 0.3s ease,
               opacity 0.2s ease;
+}
+
+/* El bloqueo de selección solo aplica en escritorio, donde la tarjeta se
+   arrastra. En móvil el usuario debe poder copiar el nombre o la dirección. */
+@media (min-width: 769px) {
+  .route-modal {
+    user-select: none;
+    -webkit-user-select: none;
+  }
 }
 
 .route-modal--minimized {
@@ -736,35 +743,104 @@ html.dark .timeline-finish-route-btn:hover {
 
   .route-modal {
     position: fixed !important;
-    top: 16px !important;
+    top: calc(var(--header-h) + var(--safe-top) + 8px) !important;
     left: 50% !important;
     transform: translate(-50%, 0) !important;
     bottom: auto !important;
     right: auto !important;
-    width: calc(100% - 32px) !important;
+    width: calc(100% - 24px) !important;
     max-width: 440px !important;
+    padding: 20px 16px;
+    /* Nunca tapa toda la pantalla: si el contenido crece, hace scroll interno. */
+    max-height: calc(100dvh - var(--header-h) - var(--safe-top) - var(--safe-bottom) - 24px) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Acoplamiento al fondo (Bottom Sheet) en móvil */
+  /* Acoplamiento al fondo (Bottom Sheet) en móvil: la mano alcanza los botones. */
   .route-modal--dock-bottom:not(.route-modal--minimized) {
     top: auto !important;
-    bottom: 24px !important;
+    bottom: calc(16px + var(--safe-bottom)) !important;
     left: 50% !important;
     transform: translate(-50%, 0) !important;
+    max-height: calc(100dvh - var(--header-h) - var(--safe-top) - var(--safe-bottom) - 32px) !important;
     animation: modalSlideUpCenterMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .route-modal--minimized {
-    top: 16px !important;
+    top: calc(var(--header-h) + var(--safe-top) + 8px) !important;
     bottom: auto !important;
     width: auto !important;
     left: 50% !important;
     transform: translate(-50%, 0) !important;
+    overflow: hidden !important;
   }
 
   .route-modal--tracking {
     border-radius: var(--radius-md) !important;
+    padding: 20px 16px 12px !important;
   }
+
+  /* Objetivos táctiles de 44px para cerrar y minimizar. */
+  .route-modal__actions-top {
+    top: 8px;
+    right: 8px;
+    gap: 2px;
+  }
+
+  .route-modal__minimize,
+  .route-modal__close {
+    width: var(--tap-min);
+    height: var(--tap-min);
+    font-size: 24px;
+  }
+
+  .route-modal__title,
+  .confirm-destination,
+  .route-tracking-title {
+    padding-right: 96px; /* deja libre la zona de los dos botones */
+  }
+
+  /* Acciones inferiores: apiladas y a ancho completo, más fáciles de acertar. */
+  .timeline-actions-bottom {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .timeline-close-map-btn,
+  .timeline-finish-route-btn {
+    width: 100%;
+    min-height: var(--tap-min);
+    justify-content: center;
+  }
+
+  .timeline-close-map-btn {
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+  }
+
+  .confirm-btn-cancel,
+  .confirm-btn-start {
+    min-height: var(--tap-min);
+  }
+
+  .route-metadata-outside {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* Móviles pequeños: los dos modos de transporte siguen cabiendo en fila. */
+@media (max-width: 360px) {
+  .transport-btn {
+    height: 64px;
+    font-size: 12.5px;
+  }
+
+  .confirm-destination { font-size: 19px; }
+  .route-tracking-title { font-size: 17px; }
 }
 
 @keyframes modalSlideUpCenterMobile {
@@ -813,8 +889,11 @@ html.dark .timeline-finish-route-btn:hover {
 }
 
 .full-route-map-overlay .map-container {
-  width: 100vw;
+  width: 100%;
+  /* 100dvh: con 100vh la barra de URL de Chrome/Safari móvil recortaba el mapa
+     y los controles de zoom quedaban fuera de la pantalla. */
   height: 100vh;
+  height: 100dvh;
   border-radius: 0 !important;
   border: none !important;
 }
@@ -835,13 +914,17 @@ html.dark .timeline-finish-route-btn:hover {
   flex-shrink: 0;
 }
 
+/* Se declara primero un rgba plano como respaldo para navegadores antiguos
+   (color-mix necesita Safari 16.2+ / Chrome 111+). */
 .route-gps-status--ok {
   color: var(--color-success, #16a34a);
+  background: rgba(27, 110, 58, 0.12);
   background: color-mix(in srgb, var(--color-success, #16a34a) 12%, transparent);
 }
 
 .route-gps-status--warn {
   color: #b45309;
+  background: rgba(245, 158, 11, 0.16);
   background: color-mix(in srgb, #f59e0b 16%, transparent);
 }
 

@@ -3,10 +3,11 @@
    ============================================================ */
 
 .footer {
-  margin-top: 5rem;
+  margin-top: var(--space-xl);
   background-color: var(--color-surface-low);
   border-top: 1.5px solid var(--color-primary);
-  padding: 40px 0 24px;
+  /* El relleno inferior respeta la barra de gestos de Android/iOS. */
+  padding: var(--space-lg) 0 calc(var(--space-md) + var(--safe-bottom));
   color: var(--color-text-secondary);
   font-family: var(--font-body);
   transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -14,9 +15,9 @@
 
 .footer__grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 32px;
-  margin-bottom: 32px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 .footer__brand {
@@ -59,6 +60,10 @@
   font-size: 13px;
   color: var(--color-text-secondary);
   transition: color 0.15s ease;
+  /* Enlaces con área táctil suficiente: en el footer se toca con el pulgar. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
 }
 
 .footer__link:hover {
@@ -90,9 +95,30 @@ html.dark .footer__link:hover {
   font-family: var(--font-mono);
 }
 
-@media (max-width: 768px) {
+/* Tablet: la marca arriba a lo ancho y las dos columnas de enlaces debajo. */
+@media (max-width: 900px) {
+  .footer__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .footer__brand {
+    grid-column: 1 / -1;
+  }
+
+  .footer__brand-desc {
+    max-width: 60ch;
+  }
+}
+
+@media (max-width: 560px) {
   .footer__grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: var(--space-md);
+  }
+
+  .footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }

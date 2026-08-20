@@ -1,17 +1,26 @@
 /* ============================================================
-   src/components/home/EventSlider.css
+   src/components/home/EventSlider.css — mobile first
    ============================================================ */
 
 .slider {
   position: relative;
   width: 100%;
-  height: 480px;
+  /* Altura fluida (240px en móvil → 480px en escritorio) en vez de saltos
+     bruscos por media query. */
+  height: var(--hero-h);
   background-color: #000;
   overflow: hidden;
   border-radius: var(--radius-md); /* 4px (ROUND_FOUR) */
-  margin: 24px 0 48px;
+  margin: var(--space-sm) 0 var(--space-lg);
   box-shadow: none;
   border: 1px solid var(--color-border);
+  /* Permite el scroll vertical de la página aunque el dedo empiece aquí. */
+  touch-action: pan-y;
+}
+
+.slider:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
 .slider__track {
@@ -19,6 +28,8 @@
   width: 100%;
   height: 100%;
   transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+  /* Acelera el desplazamiento en GPU: clave en Android de gama media. */
+  will-change: transform;
 }
 
 .slider__slide {
@@ -32,94 +43,125 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  grayscale: 10%;
+  /* Antes decía `grayscale: 10%`, que no es una propiedad CSS válida y el
+     navegador la ignoraba por completo. */
+  filter: grayscale(10%);
   transition: transform 0.6s ease;
 }
 
-.slider__slide:hover .slider__img {
-  transform: scale(1.02);
+@media (hover: hover) {
+  .slider__slide:hover .slider__img {
+    transform: scale(1.02);
+  }
 }
 
 .slider__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(23, 27, 43, 0.9) 0%, rgba(23, 27, 43, 0.4) 50%, transparent 100%);
+  background: linear-gradient(to top, rgba(23, 27, 43, 0.92) 0%, rgba(23, 27, 43, 0.45) 55%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 48px 48px;
+  /* Relleno fluido; deja sitio abajo para los puntos y los controles. */
+  padding: var(--space-md) clamp(1rem, 3vw, 3rem) clamp(3.5rem, 4vw, 3rem);
   color: #fff;
 }
 
 .slider__badge {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: clamp(9px, 2.2vw, 11px);
   font-weight: 700;
   letter-spacing: 0.15em;
   color: var(--color-accent); /* Dorado Alcaldía */
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
 }
 
 .slider__title {
   font-family: var(--font-display);
-  font-size: 38px;
+  font-size: clamp(1.25rem, 0.9rem + 2.6vw, 2.375rem); /* 20 → 38px */
   font-weight: 700;
   color: #ffffff;
   margin: 0;
   line-height: 1.15;
   letter-spacing: -0.01em;
+  /* Un titular largo no debe tapar toda la imagen en móvil. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .slider__desc {
   font-family: var(--font-body);
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.85);
-  margin-top: 8px;
+  font-size: clamp(0.8125rem, 0.78rem + 0.3vw, 0.9375rem);
+  color: rgba(255, 255, 255, 0.88);
+  margin-top: 6px;
   max-width: 600px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Indicadores de puntos (a la izquierda) */
 .slider__dots {
   position: absolute;
-  bottom: 20px;
-  left: 48px;
+  bottom: 16px;
+  left: clamp(1rem, 3vw, 3rem);
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   z-index: 10;
 }
 
 .slider__dot {
+  /* Área táctil de 24px con un punto visual de 8px dentro: se puede acertar
+     con el pulgar sin agrandar el diseño. */
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider__dot::before {
+  content: '';
+  display: block;
   width: 8px;
   height: 8px;
   border-radius: 99px;
-  background-color: rgba(255, 255, 255, 0.35);
-  border: none;
-  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.4);
   transition: width 0.3s ease, background-color 0.3s ease;
 }
 
-.slider__dot--active {
-  width: 24px;
+.slider__dot--active::before {
+  width: 22px;
   background-color: var(--color-accent);
 }
 
 /* Controles de Navegación del Carrusel en la parte inferior derecha */
 .slider__controls {
   position: absolute;
-  bottom: 38px;
-  right: 48px;
+  bottom: 14px;
+  right: clamp(1rem, 3vw, 3rem);
   z-index: 10;
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .slider__control-btn {
-  width: 44px;
-  height: 44px;
+  /* 44px: objetivo táctil mínimo en móvil, igual que en escritorio. */
+  width: var(--tap-min);
+  height: var(--tap-min);
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(23, 27, 43, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(23, 27, 43, 0.45);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   color: #ffffff;
   display: flex;
@@ -133,60 +175,69 @@
   background: var(--color-accent);
   color: var(--color-primary);
   border-color: var(--color-accent);
-  transform: scale(1.05);
 }
 
+.slider__control-btn:active {
+  transform: scale(0.94);
+}
+
+/* ============================================================
+   MÓVIL
+   ============================================================ */
 @media (max-width: 640px) {
   .slider {
-    height: 300px;
-    margin: 16px 0 32px;
-  }
-  
-  .slider__overlay {
-    padding: 24px 20px;
-    background: linear-gradient(to top, rgba(23, 27, 43, 0.95) 0%, rgba(23, 27, 43, 0.6) 60%, transparent 100%);
-  }
-  
-  .slider__title {
-    font-size: 22px;
-    line-height: 1.25;
-  }
-  
-  .slider__desc {
-    font-size: 13px;
-    max-width: 100%;
-    margin-top: 6px;
+    margin: var(--space-xs) 0 var(--space-md);
   }
 
-  .slider__dots {
-    left: 20px;
-    bottom: 20px;
+  /* El texto se centra y respira; los controles bajan de tamaño pero
+     mantienen los 44px de área táctil. */
+  .slider__overlay {
+    background: linear-gradient(to top, rgba(23, 27, 43, 0.95) 0%, rgba(23, 27, 43, 0.6) 60%, transparent 100%);
+    padding-bottom: 58px;
   }
 
   .slider__controls {
-    right: 20px;
-    bottom: 12px;
+    bottom: 10px;
     gap: 6px;
   }
 
-  .slider__control-btn {
-    width: 32px;
-    height: 32px;
+  .slider__dots {
+    bottom: 20px;
+  }
+}
+
+/* Pantallas muy pequeñas: los puntos son suficientes para navegar (más el
+   gesto de deslizar), así que las flechas dejan libre el espacio. */
+@media (max-width: 400px) {
+  .slider__controls {
+    display: none;
   }
 
-  @media (max-width: 480px) {
-    .slider__controls {
-      display: none; /* Swipe es el principal gesto táctil en móviles pequeños */
-    }
-    .slider__dots {
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 16px;
-    }
-    .slider__overlay {
-      align-items: center;
-      text-align: center;
-      padding-bottom: 36px;
-    }
+  .slider__dots {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 12px;
+  }
+
+  .slider__overlay {
+    align-items: center;
+    text-align: center;
+    padding-bottom: 46px;
+  }
+
+  .slider__desc {
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Móvil en horizontal: la altura de la pantalla es mínima, así que el hero se
+   limita para no ocupar todo el viewport. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .slider {
+    height: 220px;
+  }
+
+  .slider__title {
+    -webkit-line-clamp: 2;
   }
 }

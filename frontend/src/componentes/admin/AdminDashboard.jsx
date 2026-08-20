@@ -1,5 +1,5 @@
 // src/componentes/admin/AdminDashboard.jsx
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useCallback } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -47,7 +47,20 @@ import { fetchGoogleEvents, uploadApi, statsApi } from '../../utilidades/api';
 import { PqrsManager } from './PqrsManager';
 import { UserManager } from './UserManager';
 import { LocationPicker } from './LocationPicker';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import './AdminDashboard.css';
+
+// Título corto de cada sección, para la barra superior en móvil.
+const SECTION_LABELS = {
+  metrics: 'Visión General',
+  announcements: 'Anuncios',
+  create: 'Sitios Turísticos',
+  events: 'Calendario',
+  pqrs: 'Solicitudes PQRS',
+  users: 'Administradores',
+};
 
 export const AdminDashboard = () => {
   const {
@@ -91,6 +104,13 @@ export const AdminDashboard = () => {
   // Estados de Dashboard
   const [activeTab, setActiveTab] = useState('metrics'); // 'metrics' | 'announcements' | 'create'
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // El menú lateral en móvil se comporta como un panel modal: bloquea el scroll
+  // del fondo y se cierra con Escape.
+  const isMobile = useIsMobile();
+  const closeSidebar = useCallback(() => setIsMobileSidebarOpen(false), []);
+  useBodyScrollLock(isMobileSidebarOpen && isMobile);
+  useEscapeKey(isMobileSidebarOpen, closeSidebar);
   const [editingAnnId, setEditingAnnId] = useState(null);
   const [chartPeriod, setChartPeriod] = useState('7days'); // '7days' | '30days' | 'year'
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -606,28 +626,36 @@ export const AdminDashboard = () => {
     <div className="admin-dashboard">
       {/* Barra de Cabecera Móvil */}
       <div className="admin-mobile-header">
-        <button 
-          className="admin-mobile-header__menu-btn" 
+        <button
+          className="admin-mobile-header__menu-btn"
           onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-          aria-label="Menú administrador"
+          aria-label={isMobileSidebarOpen ? 'Cerrar menú administrador' : 'Abrir menú administrador'}
+          aria-expanded={isMobileSidebarOpen}
+          aria-controls="admin-sidebar"
         >
-          <RiMenuLine />
+          {isMobileSidebarOpen ? <RiCloseLine /> : <RiMenuLine />}
         </button>
-        <span className="admin-mobile-header__title">Panel de Administración</span>
+        {/* En móvil el título indica en qué sección se está, no el panel entero. */}
+        <span className="admin-mobile-header__title">{SECTION_LABELS[activeTab] || 'Panel de Administración'}</span>
       </div>
 
       {/* Overlay de Bloqueo para Móvil */}
       {isMobileSidebarOpen && (
-        <div 
-          className="admin-sidebar-overlay" 
-          onClick={() => setIsMobileSidebarOpen(false)}
+        <div
+          className="admin-sidebar-overlay"
+          onClick={closeSidebar}
+          aria-hidden="true"
         />
       )}
 
       <div className="admin-layout">
-        
+
         {/* Left Sidebar */}
-        <aside className={`admin-sidebar ${isMobileSidebarOpen ? 'admin-sidebar--open' : ''}`}>
+        <aside
+          id="admin-sidebar"
+          className={`admin-sidebar ${isMobileSidebarOpen ? 'admin-sidebar--open' : ''}`}
+          aria-label="Secciones del panel"
+        >
           <div className="admin-sidebar__brand">
             <div className="admin-sidebar__logo-box">
               <RiBuilding4Line className="admin-sidebar__logo-icon" />
@@ -978,25 +1006,27 @@ export const AdminDashboard = () => {
                                   src={site.images && site.images[0] ? resolveImage(site.images[0]) : 'https://images.unsplash.com/photo-1546776310-eef45dd6d63c?auto=format&fit=crop&w=800&q=80'} 
                                   alt={site.name} 
                                   className="admin-table-img" 
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               </td>
-                              <td className="admin-table-name-cell">
+                              <td className="admin-table-name-cell" data-label="Sitio">
                                 <span className="admin-table-site-name">{site.name}</span>
                               </td>
-                              <td>
+                              <td data-label="Categoría">
                                 <span className="admin-table-category-badge">{site.category}</span>
                               </td>
-                              <td>
+                              <td data-label="Coordenadas">
                                 <span className="admin-table-coords-text font-mono">
-                                  {formatCoordinates(site.lat || 6.1724, site.lng || -75.6091)}
+                                  {formatCoordinates(site.lat ?? 6.1724, site.lng ?? -75.6091)}
                                 </span>
                               </td>
                               <td className="text-right admin-table-actions-cell">
                                 <div className="admin-table-action-buttons">
-                                  <button className="table-icon-btn table-icon-btn--edit" onClick={() => { setActiveTab('create'); handleEditSiteClick(site); }} title="Editar">
+                                  <button className="table-icon-btn table-icon-btn--edit" onClick={() => { setActiveTab('create'); handleEditSiteClick(site); }} title="Editar" aria-label={`Editar ${site.name}`}>
                                     <RiEditLine />
                                   </button>
-                                  <button className="table-icon-btn table-icon-btn--delete" onClick={() => handleDeleteSiteClick(site.id)} title="Eliminar">
+                                  <button className="table-icon-btn table-icon-btn--delete" onClick={() => handleDeleteSiteClick(site.id)} title="Eliminar" aria-label={`Eliminar ${site.name}`}>
                                     <RiDeleteBinLine />
                                   </button>
                                 </div>

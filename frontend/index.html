@@ -2,11 +2,44 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- viewport-fit=cover: permite usar las áreas seguras (notch / barra de
+         gestos). El zoom del usuario NO se bloquea (accesibilidad). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
     <title>Turismo Itagüí — Explora y Descubre</title>
     <meta name="description" content="Portal oficial de turismo de Itagüí, Antioquia. Explora parques ecológicos, gastronomía tradicional, eventos culturales y obtén navegación interactiva por GPS." />
-    
+
+    <!-- Color de la barra del navegador en Android/Chrome, según el tema. -->
+    <meta name="theme-color" content="#faf8ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0C0E1A" media="(prefers-color-scheme: dark)" />
+
+    <!-- Comportamiento al añadir a la pantalla de inicio en iOS. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Turismo Itagüí" />
+    <meta name="format-detection" content="telephone=yes" />
+
+    <!-- Open Graph / redes sociales -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Turismo Itagüí" />
+    <meta property="og:title" content="Turismo Itagüí — Explora y Descubre" />
+    <meta property="og:description" content="Parques, cultura, gastronomía y eventos de Itagüí, Antioquia, con rutas y navegación por GPS." />
+    <meta property="og:locale" content="es_CO" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Fuentes: preconnect + stylesheet en lugar de @import en CSS, para no
+         bloquear el primer render en conexiones móviles. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Libre+Franklin:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+    />
+
+    <!-- Precalienta la conexión con el CDN de Google Maps. -->
+    <link rel="preconnect" href="https://maps.googleapis.com" />
   </head>
   <body>
     <div id="root"></div>

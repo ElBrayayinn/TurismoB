@@ -1,39 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Libre+Franklin:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap');
-
 /* ============================================================
    src/styles/global.css
-   Turismo Itagüí — Reset y Estilos Globales
+   Turismo Itagüí — Reset y Estilos Globales (mobile first)
+
+   Las fuentes se cargan desde index.html con preconnect para no
+   bloquear el render con un @import (clave en redes móviles).
    ============================================================ */
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  /* Evita que iOS/Android reescalen la tipografía al rotar el dispositivo. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Compensa la cabecera fija al navegar con anclas. */
+  scroll-padding-top: calc(var(--header-h) + 12px);
+  /* Red de seguridad contra el scroll lateral. Se usa `clip` y no `hidden`
+     porque `hidden` en <html> rompe position: sticky (la cabecera). */
+  overflow-x: clip;
 }
 
 body {
   font-family: var(--font-body);
   background-color: var(--color-bg);
   color: var(--color-text-primary);
+  font-size: var(--fs-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* 100dvh sigue la altura visible real del navegador móvil (barra de URL). */
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  /* Ningún elemento debe provocar scroll lateral en móvil. */
+  overflow-x: hidden;
+  /* Quita el flash gris de Android al tocar. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 600;
   color: var(--color-text-primary);
+  /* Los títulos largos ("Corregimiento El Manzanillo") no rompen el layout. */
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+p, li, span, label {
+  overflow-wrap: break-word;
 }
 
 a {
@@ -41,42 +69,126 @@ a {
   text-decoration: none;
 }
 
+/* Medios siempre contenidos en su caja: la causa nº1 de scroll lateral. */
+img, picture, video, canvas, svg, iframe {
+  display: block;
+  max-width: 100%;
+}
+
+img, video {
+  height: auto;
+}
+
 button, input, textarea, select {
   font-family: inherit;
   color: inherit;
+  font-size: inherit;
 }
 
-/* Scrollbar personalizado */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* elimina el retardo de 300ms al tocar */
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
+/* ============================================================
+   ACCESIBILIDAD — foco visible para teclado
+   Varios componentes hacen `outline: none`; esto garantiza que
+   quien navega con teclado siempre vea dónde está.
+   ============================================================ */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border-strong);
-  border-radius: var(--radius-sm);
+html.dark :focus-visible {
+  outline-color: var(--color-accent);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary-light);
+/* Salto directo al contenido para lectores de pantalla y teclado. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 12px 20px;
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  border-radius: 0 0 var(--radius-sm) 0;
 }
 
-/* Utilidades de contenedor */
+.skip-link:focus {
+  left: 0;
+}
+
+/* Solo para lectores de pantalla. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scrollbar personalizado (solo apuntadores finos: en móvil molesta) */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: var(--radius-sm);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-light);
+  }
+}
+
+/* El <main> ocupa el espacio restante para que el footer quede abajo
+   incluso en páginas cortas. */
+.app-main {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ============================================================
+   CONTENEDOR FLUIDO
+   El padding crece con el viewport y respeta el notch en horizontal.
+   ============================================================ */
 .container {
   width: 100%;
   max-width: 1600px;
-  margin: 0 auto;
-  padding: 0 16px;
+  margin-inline: auto;
+  padding-inline: max(var(--container-pad), var(--safe-left)) max(var(--container-pad), var(--safe-right));
+}
+
+/* Utilidad: rompe el contenedor para llevar algo de borde a borde en móvil. */
+.full-bleed-mobile {
+  margin-inline: calc(-1 * var(--container-pad));
+}
+
+@media (min-width: 769px) {
+  .full-bleed-mobile { margin-inline: 0; }
 }
 
 /* Estilo para inputs comunes (estilo underline minimalista de Stitch) */
 .input-field {
   width: 100%;
-  padding: 10px 0px;
+  padding: 12px 0;
   background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--color-border);
@@ -97,27 +209,60 @@ html.dark .input-field:focus {
   box-shadow: none;
 }
 
-/* Grid de sitios */
-.sites-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
-  margin-top: 24px;
+/* ============================================================
+   REGLA CRÍTICA EN MÓVIL
+   Safari en iOS hace zoom automático al enfocar un campo con
+   font-size < 16px, y el usuario queda con la página desplazada.
+   Forzamos 16px en todos los campos por debajo de 769px.
+   ============================================================ */
+@media (max-width: 768px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea,
+  .input-field {
+    font-size: 16px !important;
+  }
+
+  /* Altura táctil mínima en cualquier control de formulario. */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select {
+    min-height: var(--tap-min);
+  }
 }
 
-@media (max-width: 640px) {
+/* ============================================================
+   GRID DE SITIOS — fluido y sin saltos bruscos
+   ============================================================ */
+.sites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+/* En tablets se garantiza un mínimo de 2 columnas útiles. */
+@media (min-width: 481px) and (max-width: 768px) {
+  .sites-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  }
+}
+
+@media (max-width: 480px) {
   .sites-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .container {
-    padding: 0 12px;
+    gap: var(--space-sm);
   }
 }
 
 /* Transición suave para todos los elementos con hover */
 .interactive-element {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Los efectos hover solo tienen sentido con ratón: en táctil se quedan
+   "pegados" tras el toque. */
+@media (hover: none) {
+  .interactive-element:hover { transform: none; }
 }
 
 /* ============================================================
@@ -127,7 +272,8 @@ html.dark .input-field:focus {
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
-  padding: 10px 20px;
+  padding: 12px 20px;
+  min-height: var(--tap-min);
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: inline-flex;
@@ -153,6 +299,14 @@ html.dark .input-field:focus {
 
 .btn-primary:active {
   transform: translateY(0);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 html.dark .btn-primary {
@@ -198,6 +352,12 @@ html.dark .btn-primary:hover {
   transform: translateY(0);
 }
 
+@media (hover: none) {
+  .btn-primary:hover, .btn-secondary:hover, .btn-danger:hover {
+    transform: none;
+  }
+}
+
 /* ============================================================
    Custom Dropdown (Stitch Style)
    ============================================================ */
@@ -206,11 +366,17 @@ html.dark .btn-primary:hover {
   width: 100%;
 }
 
-.custom-dropdown-trigger {
+/* Se limitan al contenedor .custom-dropdown (portal público). El panel de
+   administración usa .custom-dropdown-container con sus propios estilos: sin
+   esta restricción, ambos juegos de reglas comparten nombres de clase y el
+   resultado depende del orden de carga del CSS. */
+.custom-dropdown .custom-dropdown-trigger {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 0.75rem 1rem;
+  min-height: var(--tap-min);
   background-color: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -220,21 +386,28 @@ html.dark .btn-primary:hover {
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
   user-select: none;
+  text-align: left;
+  width: 100%;
 }
 
-.custom-dropdown-trigger:hover {
+.custom-dropdown .custom-dropdown-trigger:hover {
   border-color: var(--color-primary-light);
 }
 
-.custom-dropdown-trigger:focus,
-.custom-dropdown-trigger.open {
+.custom-dropdown .custom-dropdown-trigger:focus,
+.custom-dropdown .custom-dropdown-trigger.open {
   outline: none;
   border-color: var(--color-primary-light);
   box-shadow: 0 0 0 3px var(--color-primary-faint);
 }
 
-html.dark .custom-dropdown-trigger:hover,
-html.dark .custom-dropdown-trigger.open {
+.custom-dropdown .custom-dropdown-trigger:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+html.dark .custom-dropdown .custom-dropdown-trigger:hover,
+html.dark .custom-dropdown .custom-dropdown-trigger.open {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-faint);
 }
@@ -243,13 +416,14 @@ html.dark .custom-dropdown-trigger.open {
   color: var(--color-text-secondary);
   transition: transform 0.2s ease;
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .dropdown-arrow.open {
   transform: rotate(180deg);
 }
 
-.custom-dropdown-menu {
+.custom-dropdown .custom-dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -258,8 +432,10 @@ html.dark .custom-dropdown-trigger.open {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   z-index: 50;
-  max-height: 250px;
+  max-height: min(250px, 45vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   box-shadow: var(--shadow-modal);
   animation: dropdownEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -275,8 +451,17 @@ html.dark .custom-dropdown-trigger.open {
   }
 }
 
-.custom-dropdown-option {
+/* Puede ser <div> o <button> (las opciones accesibles son botones): se
+   normaliza para que ambos se vean igual. */
+.custom-dropdown .custom-dropdown-option {
+  width: 100%;
   padding: 0.75rem 1rem;
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  text-align: left;
+  background: none;
+  border: none;
   font-family: var(--font-body);
   font-size: 0.95rem;
   color: var(--color-text-primary);
@@ -284,18 +469,53 @@ html.dark .custom-dropdown-trigger.open {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.custom-dropdown-option:hover {
+.custom-dropdown .custom-dropdown-option:hover {
   background-color: var(--color-surface-alt);
 }
 
-.custom-dropdown-option.selected {
+.custom-dropdown .custom-dropdown-option.selected {
   background-color: var(--color-primary-faint);
   color: var(--color-primary-light);
   font-weight: 600;
 }
 
-html.dark .custom-dropdown-option.selected {
+html.dark .custom-dropdown .custom-dropdown-option.selected {
   background-color: var(--color-accent-faint);
   color: var(--color-accent);
 }
 
+/* ============================================================
+   AVISO GLOBAL DE ERROR DE DATOS (backend caído)
+   ============================================================ */
+.app-data-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: var(--space-sm) 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(186, 26, 26, 0.1);
+  border: 1px solid rgba(186, 26, 26, 0.25);
+  color: var(--color-danger);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.app-data-error svg {
+  flex-shrink: 0;
+  font-size: 18px;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   ESTADO DE CARGA A PANTALLA COMPLETA (lazy loading de rutas)
+   ============================================================ */
+.route-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: var(--space-xl) var(--container-pad);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}

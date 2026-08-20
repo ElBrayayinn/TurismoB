@@ -844,6 +844,21 @@ html.dark .admin-table-category-badge {
 
 .site-form .form-row > div {
   flex: 1;
+  min-width: 0;
+}
+
+/* En móvil los pares de campos se apilan: dos inputs a ~150px cada uno son
+   inusables para escribir una dirección. */
+@media (max-width: 640px) {
+  .site-form .form-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .site-form-card,
+  .preview-sticky {
+    padding: 16px;
+  }
 }
 
 .site-form textarea {
@@ -1191,14 +1206,19 @@ html.dark .filter-toggle-btn--active {
   .admin-mobile-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    height: 60px;
+    gap: 12px;
+    height: 56px;
     background-color: var(--color-surface);
     border-bottom: 1.5px solid var(--color-border);
-    padding: 0 16px;
+    padding: 0 12px;
     position: sticky;
-    top: 70px; /* Justo debajo de la cabecera principal */
+    /* Se ancla con la variable de la cabecera principal en lugar de un 70px
+       fijo que se desalineaba cuando la cabecera cambia de alto. */
+    top: calc(var(--header-h) + var(--safe-top));
     z-index: 900;
+    /* Se estira a todo el ancho aunque el contenedor tenga relleno. */
+    margin-inline: calc(-1 * var(--container-pad));
+    padding-inline: var(--container-pad);
   }
 
   .admin-mobile-header__menu-btn {
@@ -1210,9 +1230,17 @@ html.dark .filter-toggle-btn--active {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: var(--tap-min);
+    height: var(--tap-min);
+    flex-shrink: 0;
+    margin-left: -8px;
     border-radius: var(--radius-sm);
+  }
+
+  .admin-mobile-header__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .admin-mobile-header__menu-btn:active {
@@ -1231,8 +1259,11 @@ html.dark .filter-toggle-btn--active {
     position: fixed;
     top: 0;
     left: 0;
+    /* dvh: con 100vh la parte final del menú (cerrar sesión) quedaba debajo de
+       la barra de URL del navegador móvil y no se podía tocar. */
     height: 100vh;
-    width: 280px;
+    height: 100dvh;
+    width: min(300px, 86vw);
     z-index: 9999;
     border-radius: 0;
     border: none;
@@ -1240,10 +1271,21 @@ html.dark .filter-toggle-btn--active {
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+    /* Menú con scroll propio si no cabe, respetando notch y barra de gestos. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: calc(20px + var(--safe-top)) 18px calc(20px + var(--safe-bottom));
+    min-height: 0;
   }
 
   .admin-sidebar--open {
     transform: translateX(0);
+  }
+
+  /* Enlaces del menú con altura táctil real. */
+  .admin-sidebar__link {
+    min-height: var(--tap-min);
+    font-size: 15px;
   }
 
   /* Grid de métricas de una sola columna en móvil */
@@ -1283,36 +1325,108 @@ html.dark .filter-toggle-btn--active {
     display: none;
   }
 
-  /* Desvanecimiento para indicar scroll horizontal en tablas */
+  /* ============================================================
+     TABLA DE SITIOS → TARJETAS APILADAS
+     Antes se ocultaban las columnas de categoría y coordenadas y el resto
+     quedaba con scroll horizontal: en móvil se perdía información y había
+     que arrastrar la tabla. Ahora cada fila es una tarjeta legible.
+     ============================================================ */
   .admin-sites-table-wrapper {
     position: relative;
+    background: transparent;
+    border: none;
+    overflow-x: visible;
   }
 
-  .admin-sites-table-wrapper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 24px;
-    background: linear-gradient(to right, transparent, var(--color-surface));
-    pointer-events: none;
+  .admin-sites-table {
+    display: block;
   }
 
-  .admin-sites-table th:nth-child(3),
-  .admin-sites-table td:nth-child(3),
-  .admin-sites-table th:nth-child(4),
-  .admin-sites-table td:nth-child(4) {
+  .admin-sites-table thead {
+    /* La cabecera ya no aporta: cada dato lleva su propia etiqueta. */
     display: none;
   }
 
-  .admin-table-img-cell {
-    width: 60px;
+  .admin-sites-table tbody,
+  .admin-sites-table tr,
+  .admin-sites-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-sites-table tr {
+    position: relative;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 12px 12px 12px 76px; /* hueco a la izquierda para la miniatura */
+    margin-bottom: 10px;
+    min-height: 76px;
+  }
+
+  .admin-sites-table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  .admin-sites-table td {
+    border-bottom: none;
+    padding: 2px 0;
+  }
+
+  /* Miniatura anclada a la izquierda de la tarjeta. */
+  .admin-sites-table .admin-table-img-cell {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 52px;
+    padding: 0;
   }
 
   .admin-table-img {
+    width: 52px;
+    height: 52px;
+  }
+
+  /* Etiqueta del dato, tomada del atributo data-label del <td>. */
+  .admin-sites-table td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  /* El nombre del sitio es el título de la tarjeta: sin etiqueta. */
+  .admin-sites-table td.admin-table-name-cell::before {
+    content: none;
+  }
+
+  .admin-table-site-name {
+    font-size: 15px;
+  }
+
+  /* Acciones a ancho completo, alineadas a la derecha y con 40px de alto. */
+  .admin-sites-table .admin-table-actions-cell {
+    padding-top: 10px;
+    margin-top: 8px;
+    border-top: 1px solid var(--color-border-faint);
+  }
+
+  .admin-table-action-buttons {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .table-icon-btn {
     width: 40px;
     height: 40px;
+  }
+
+  /* Cuadrícula de sitios del panel: 2 columnas en móvil grande. */
+  .admin-sites-grid-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+    gap: 12px;
   }
 }
 
@@ -2092,6 +2206,214 @@ html.dark .detail-socials a {
 @media (max-width: 900px) {
   .events-admin-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   CAPA RESPONSIVE DEL PANEL (mobile first)
+   Reúne los ajustes que faltaban: tipografías fluidas, tabla de PQRS
+   apilada, gráficos que no desbordan y objetivos táctiles de 40-44px.
+   ============================================================ */
+
+/* Login: tarjeta fluida, sin márgenes fijos que descentraban en móvil. */
+.login-container {
+  padding: clamp(1.25rem, 0.8rem + 2vw, 2rem);
+  margin: clamp(1.5rem, 5vw, 3.75rem) auto;
+}
+
+.login-btn {
+  min-height: var(--tap-min);
+}
+
+/* Título de sección fluido. */
+.admin-content-title {
+  font-size: clamp(1.25rem, 1rem + 1.4vw, 1.625rem);
+}
+
+/* Recharts: el contenedor debe poder encogerse o el gráfico desborda. */
+.interaction-chart-card,
+.details-card {
+  min-width: 0;
+}
+
+.interaction-chart-card .recharts-responsive-container {
+  min-width: 0 !important;
+}
+
+@media (max-width: 1024px) {
+  /* Tablet: 2 columnas de KPIs en lugar de 3 apretadas. */
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-card,
+  .details-card,
+  .events-list-card {
+    padding: 16px;
+  }
+
+  .metric-card__header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Cabecera de las tarjetas de detalle: título y selector apilados. */
+  .details-card__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .custom-dropdown-container {
+    display: block;
+  }
+
+  .custom-dropdown-container .custom-dropdown-trigger {
+    width: 100%;
+    min-height: var(--tap-min);
+  }
+
+  /* ── Tabla de PQRS → tarjetas apiladas ── */
+  .pqrs-table-wrapper {
+    overflow-x: visible;
+  }
+
+  .pqrs-table,
+  .pqrs-table tbody,
+  .pqrs-table tr,
+  .pqrs-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .pqrs-table thead {
+    display: none;
+  }
+
+  .pqrs-table tr {
+    border-bottom: 1px solid var(--color-border);
+    padding: 14px 16px;
+  }
+
+  .pqrs-table td {
+    border-bottom: none;
+    padding: 3px 0;
+  }
+
+  .pqrs-table td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  /* El asunto ya no se recorta a una línea: hay ancho de sobra al apilar. */
+  .pqrs-subject-td {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .pqrs-actions-td {
+    padding-top: 10px;
+    margin-top: 8px;
+    border-top: 1px solid var(--color-border-faint);
+  }
+
+  .pqrs-action-buttons {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* 40px: aprobar o rechazar por error es costoso, conviene acertar. */
+  .action-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Pestañas de filtro deslizables en lugar de amontonadas. */
+  .pqrs-filters-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filter-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 40px;
+  }
+
+  /* Detalle de PQRS: campos a una columna. */
+  .detail-row {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-actions {
+    flex-direction: column;
+  }
+
+  .detail-actions > * {
+    width: 100%;
+  }
+
+  /* Lista de eventos del calendario: la fila se apila. */
+  .events-admin-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .events-admin-item__actions {
+    justify-content: flex-end;
+  }
+
+  .events-admin-item__title {
+    white-space: normal;
+  }
+
+  /* Tabla de campañas (top de sitios): más aire y sin recortes. */
+  .campaigns-table th,
+  .campaigns-table td {
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-content-header__actions {
+    width: 100%;
+  }
+
+  .sites-section-title {
+    font-size: 1.05rem;
+  }
+
+  /* Una sola columna de tarjetas de sitio en pantallas muy estrechas. */
+  .admin-sites-grid-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* El gráfico necesita menos alto para no empujar todo hacia abajo. */
+  .interaction-chart-card .recharts-responsive-container {
+    height: 200px !important;
   }
 }
 

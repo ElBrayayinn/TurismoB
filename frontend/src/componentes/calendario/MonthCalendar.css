@@ -1,7 +1,10 @@
 /* src/components/calendar/MonthCalendar.css */
 
 .month-calendar {
-  /* Borde tenue: color sutil en vez del outline marcado */
+  /* Borde tenue: color sutil en vez del outline marcado.
+     Se declara primero un respaldo plano por si el navegador no soporta
+     color-mix (Safari < 16.2). */
+  --calendar-line: var(--color-border-faint);
   --calendar-line: color-mix(in srgb, var(--color-border) 55%, transparent);
   border: 1px solid var(--calendar-line);
   border-radius: var(--radius-md);
@@ -157,9 +160,11 @@
 
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
-  /* Cuadrícula compacta y equilibrada: número centrado y puntos debajo. */
+  /* Cuadrícula compacta y equilibrada: número centrado y puntos debajo.
+     min-height 60px mantiene cada día como objetivo táctil cómodo (el ancho
+     ya es ~1/7 del viewport, unos 50px en un móvil de 360px). */
   .month-calendar__cell {
-    min-height: 58px;
+    min-height: 60px;
     padding: 6px 2px 7px;
     align-items: center;
     gap: 5px;
@@ -221,11 +226,30 @@
 
 @media (max-width: 400px) {
   .month-calendar__cell {
-    min-height: 50px;
+    min-height: 52px;
+    padding: 5px 1px 6px;
   }
   .month-calendar__date {
     font-size: 12px;
     width: 22px;
     height: 22px;
+  }
+  .month-calendar__weekday {
+    /* En 320px las abreviaturas de 3 letras se apretaban: se recortan a 1. */
+    font-size: 9px;
+    letter-spacing: 0;
+    padding: 8px 1px;
+  }
+  /* Máximo 3 puntos por fila para que no se solapen con el número del día. */
+  .month-calendar__events {
+    gap: 3px;
+  }
+}
+
+/* Móvil en horizontal: la cuadrícula se aplana para que el mes completo quepa
+   sin scroll vertical. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .month-calendar__cell {
+    min-height: 44px;
   }
 }

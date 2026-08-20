@@ -1,7 +1,9 @@
 // src/componentes/comunes/CustomModal.jsx
-import { useEffect } from 'react';
+import { useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCloseLine, RiAlertLine, RiCheckboxCircleLine, RiQuestionLine, RiInformationLine } from 'react-icons/ri';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import './CustomModal.css';
 
 export const CustomModal = ({ 
@@ -15,18 +17,16 @@ export const CustomModal = ({
   cancelText = 'Cancelar',
   variant = 'warning' // 'warning' | 'danger' | 'success' | 'info'
 }) => {
-  
-  // Bloquear scroll del fondo cuando el modal esté abierto
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  // Bloqueo de scroll del fondo compatible con iOS (ver useBodyScrollLock).
+  useBodyScrollLock(isOpen);
+
+  // Cerrar con Escape: en un diálogo modal es obligatorio (WCAG 2.1.2).
+  const dismiss = useCallback(() => {
+    if (type === 'confirm' && onCancel) onCancel();
+    else if (onConfirm) onConfirm();
+  }, [type, onCancel, onConfirm]);
+
+  useEscapeKey(isOpen, dismiss);
 
   if (!isOpen) return null;
 
@@ -45,20 +45,18 @@ export const CustomModal = ({
     }
   };
 
-  const handleBackdropClick = () => {
-    if (type === 'confirm' && onCancel) {
-      onCancel();
-    } else if (onConfirm) {
-      onConfirm();
-    }
-  };
-
   // Portal a document.body: evita que un ancestro con `transform`/`animation`
   // (p. ej. .page-transition) atrape el `position: fixed` y deje el header y el
   // footer fuera del fondo oscurecido.
   return createPortal(
-    <div className="custom-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="custom-modal-container" onClick={(e) => e.stopPropagation()}>
+    <div className="custom-modal-backdrop" onClick={dismiss}>
+      <div
+        className="custom-modal-container"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <button 
           className="custom-modal-close" 
           onClick={type === 'confirm' ? onCancel : onConfirm} 

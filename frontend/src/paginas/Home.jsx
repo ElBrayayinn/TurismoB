@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useMemo } from 'react';
 import { AppContext } from '../contexto/AppContext';
 import { zoneOptions, DEFAULT_ZONE } from '../datos/zones';
 import { EventSlider } from '../componentes/inicio/EventSlider';
@@ -12,7 +12,8 @@ import {
   RiBuildingLine, 
   RiStore2Line,
   RiSearchLine,
-  RiArrowDownSLine
+  RiArrowDownSLine,
+  RiErrorWarningLine
 } from 'react-icons/ri';
 import './Home.css';
 
@@ -26,7 +27,7 @@ const CATEGORIES = [
 ];
 
 export const Home = () => {
-  const { sites, announcements, loading } = useContext(AppContext);
+  const { sites, announcements, loading, dataError } = useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -59,24 +60,44 @@ export const Home = () => {
   };
 
   // Filtrar anuncios basados en la zona seleccionada (si el anuncio tiene una zona asociada)
-  const zoneAnnouncements = announcements.filter(ann => !ann.zone || ann.zone === currentZone);
-  const displayAnnouncements = zoneAnnouncements.length > 0 ? zoneAnnouncements : announcements;
+  const displayAnnouncements = useMemo(() => {
+    const zoneAnnouncements = announcements.filter(ann => !ann.zone || ann.zone === currentZone);
+    return zoneAnnouncements.length > 0 ? zoneAnnouncements : announcements;
+  }, [announcements, currentZone]);
 
   // Sitios de interés sugeridos en la zona actual
-  const nearbySites = sites.filter(site => site.zone === currentZone);
+  const nearbySites = useMemo(
+    () => sites.filter(site => site.zone === currentZone),
+    [sites, currentZone]
+  );
 
   // Sitios generales aplicando categoría y búsqueda
-  const filteredSites = sites.filter(site => {
-    const matchesCategory = selectedCategory === 'Todos' || site.category === selectedCategory;
-    const matchesSearch = !searchQuery || 
-      site.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      site.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredSites = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return sites.filter(site => {
+      const matchesCategory = selectedCategory === 'Todos' || site.category === selectedCategory;
+      const matchesSearch = !query ||
+        (site.name || '').toLowerCase().includes(query) ||
+        (site.description || '').toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    });
+  }, [sites, selectedCategory, searchQuery]);
 
   return (
     <div className="home-section container">
-      
+
+      {/* Si el backend no responde, se dice claramente en lugar de mostrar
+          "no se encontraron sitios", que sugiere que no hay contenido. */}
+      {dataError && (
+        <p className="app-data-error" role="alert">
+          <RiErrorWarningLine aria-hidden="true" />
+          <span>
+            No fue posible cargar la información del portal: {dataError} Intenta
+            recargar la página en unos minutos.
+          </span>
+        </p>
+      )}
+
       {/* SIMULADOR DE GEORREFERENCIACIÓN */}
       {/* Carrusel de Anuncios Priorizado por Zona */}
       <div className="announcements-section">
@@ -87,15 +108,20 @@ export const Home = () => {
               type="button"
               className={`section-badge zone-badge-trigger ${isZoneDropdownOpen ? 'open' : ''}`}
               onClick={() => setIsZoneDropdownOpen(!isZoneDropdownOpen)}
+              aria-expanded={isZoneDropdownOpen}
+              aria-haspopup="listbox"
             >
               <span>Zona actual: {currentZone}</span>
-              <RiArrowDownSLine className={`dropdown-arrow ${isZoneDropdownOpen ? 'open' : ''}`} />
+              <RiArrowDownSLine className={`dropdown-arrow ${isZoneDropdownOpen ? 'open' : ''}`} aria-hidden="true" />
             </button>
             {isZoneDropdownOpen && (
-              <div className="custom-dropdown-menu zone-badge-menu">
+              <div className="custom-dropdown-menu zone-badge-menu" role="listbox" aria-label="Elegir comuna">
                 {zoneOptions.map(opt => (
-                  <div
+                  <button
+                    type="button"
                     key={opt.value}
+                    role="option"
+                    aria-selected={currentZone === opt.value}
                     className={`custom-dropdown-option ${currentZone === opt.value ? 'selected' : ''}`}
                     onClick={() => {
                       handleZoneChange(opt.value);
@@ -103,7 +129,7 @@ export const Home = () => {
                     }}
                   >
                     {opt.label}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -145,16 +171,18 @@ export const Home = () => {
 
       {/* Categorías y Barra de Búsqueda de Filtro (Stitch Style) */}
       <div className="category-search-section">
-        <div className="category-filters">
+        <div className="category-filters" role="group" aria-label="Filtrar por categoría">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             return (
               <button
                 key={cat.id}
+                type="button"
                 className={`filter-btn ${selectedCategory === cat.id ? 'filter-btn--active' : ''}`}
+                aria-pressed={selectedCategory === cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
               >
-                <Icon size={16} />
+                <Icon size={16} aria-hidden="true" />
                 <span>{cat.name}</span>
               </button>
             );
@@ -162,12 +190,16 @@ export const Home = () => {
         </div>
 
         <div className="search-bar">
-          <RiSearchLine className="search-bar-icon" />
-          <input 
-            type="text" 
+          <RiSearchLine className="search-bar-icon" aria-hidden="true" />
+          <label className="sr-only" htmlFor="buscar-sitio">Buscar un sitio turístico</label>
+          <input
+            id="buscar-sitio"
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="¿Qué buscas explorar?" 
+            placeholder="¿Qué buscas explorar?"
             className="search-input"
           />
         </div>
