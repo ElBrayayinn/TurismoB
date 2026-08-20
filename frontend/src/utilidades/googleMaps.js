@@ -9,6 +9,27 @@ function buildPlaceLabel(site) {
   return [name, address].filter(Boolean).join(', ');
 }
 
+/**
+ * Destino para Google Maps Directions.
+ * - compact=false (PC): nombre + dirección.
+ * - compact=true (móvil): solo nombre; si falta, solo dirección.
+ * @returns {{ text: string|null, hasCoords: boolean, lat: number, lng: number }}
+ */
+function buildDestinationQuery(site, { compact = false } = {}) {
+  const { lat, lng, hasCoords } = parseCoords(site);
+  const name = typeof site?.name === 'string' ? site.name.trim() : '';
+  const address = typeof site?.address === 'string' ? site.address.trim() : '';
+
+  let text = null;
+  if (compact) {
+    text = name || address || null;
+  } else {
+    text = buildPlaceLabel(site) || null;
+  }
+
+  return { text, hasCoords, lat, lng };
+}
+
 function parseCoords(site) {
   const lat = site?.lat != null && site.lat !== '' ? Number(site.lat) : NaN;
   const lng = site?.lng != null && site.lng !== '' ? Number(site.lng) : NaN;
@@ -18,24 +39,24 @@ function parseCoords(site) {
 
 /**
  * Construye una URL de Google Maps Directions (abre la app en móvil / la web en desktop).
- * Prefiere el nombre+dirección del sitio para que el destino se llame igual que la ficha.
+ * En móvil (`compact: true`) solo envía el nombre (o la dirección) para que la app
+ * pueda resolver el destino; en escritorio mantiene nombre + dirección.
  * @param {{ name?: string, lat?: number|string, lng?: number|string, address?: string }} site
  * @param {'walk'|'car'} mode
  * @param {{ lat: number, lng: number }|null} origin - ubicación real del usuario (opcional)
+ * @param {{ compact?: boolean }} options
  * @returns {string|null}
  */
-export function buildGoogleMapsDirectionsUrl(site, mode = 'walk', origin = null) {
+export function buildGoogleMapsDirectionsUrl(site, mode = 'walk', origin = null, options = {}) {
   if (!site) return null;
 
-  const { lat, lng, hasCoords } = parseCoords(site);
-  const label = buildPlaceLabel(site);
+  const { compact = false } = options;
+  const { text, hasCoords, lat, lng } = buildDestinationQuery(site, { compact });
 
-  if (!label && !hasCoords) return null;
+  if (!text && !hasCoords) return null;
 
   const params = new URLSearchParams({ api: '1' });
-  // Nombre + dirección primero: Google muestra ese título en lugar de un POI cercano.
-  // Si no hay texto, se usan solo las coordenadas.
-  params.set('destination', label || `${lat},${lng}`);
+  params.set('destination', text || `${lat},${lng}`);
   params.set('travelmode', mode === 'walk' ? 'walking' : 'driving');
 
   if (

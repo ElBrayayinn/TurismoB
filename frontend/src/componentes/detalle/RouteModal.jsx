@@ -7,6 +7,7 @@ import {
   RiErrorWarningLine,
 } from 'react-icons/ri';
 import { buildGoogleMapsDirectionsUrl } from '../../utilidades/googleMaps';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import './RouteModal.css';
 
 export const RouteModal = ({
@@ -16,6 +17,7 @@ export const RouteModal = ({
   userPosition,
   userLocationSimulated = false,
 }) => {
+  const isMobile = useIsMobile();
   const [isClosing, setIsClosing] = useState(false);
   const [noDestination, setNoDestination] = useState(false);
 
@@ -37,7 +39,9 @@ export const RouteModal = ({
         ? { lat: userPosition.lat, lng: userPosition.lng }
         : null;
 
-    const url = buildGoogleMapsDirectionsUrl(site, mode, origin);
+    const url = buildGoogleMapsDirectionsUrl(site, mode, origin, {
+      compact: isMobile,
+    });
     if (!url) {
       setNoDestination(true);
       return;
